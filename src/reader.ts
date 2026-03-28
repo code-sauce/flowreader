@@ -152,11 +152,15 @@ export function mountReader(
       el.classList.add('gw-focus');
       prevFocusEl = el;
 
-      // Smooth scroll to keep current word near vertical center
+      // Only scroll when the word nears the bottom 20% of the container
       const containerRect = gradientEl.getBoundingClientRect();
       const elRect = el.getBoundingClientRect();
-      const targetScroll = gradientEl.scrollTop + (elRect.top - containerRect.top) - (containerRect.height / 2);
-      gradientEl.scrollTo({ top: targetScroll, behavior: 'smooth' });
+      const threshold = containerRect.bottom - containerRect.height * 0.2;
+      if (elRect.top > threshold) {
+        // Scroll so the word lands at ~35% from top
+        const target = gradientEl.scrollTop + (elRect.top - containerRect.top) - containerRect.height * 0.35;
+        gradientEl.scrollTop = target;
+      }
     }
   }
 
