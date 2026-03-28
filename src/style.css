@@ -77,35 +77,35 @@ html, body {
   font-weight: bold;
 }
 
-/* Gradient mode */
+/* Gradient mode (vertical) */
 
 .reader-gradient {
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 8px;
   font-family: var(--font-mono);
-  font-size: clamp(32px, 5vw, 52px);
   white-space: nowrap;
 }
 
-.gradient-word {
+.gradient-line {
   color: var(--text);
-  transition: opacity 0.15s ease;
+  font-size: clamp(24px, 4vw, 36px);
+  line-height: 1.6;
+  transition: opacity 0.15s ease, font-size 0.15s ease;
+  text-align: center;
 }
 
 .gradient-current {
+  color: var(--text-bright);
   font-size: clamp(48px, 8vw, 80px);
+  line-height: 1.4;
 }
 
-.gradient-current .reader-orp {
+.gradient-orp {
   color: var(--accent);
   font-weight: bold;
-}
-
-.gradient-current .reader-before,
-.gradient-current .reader-after {
-  color: var(--text-bright);
 }
 
 /* Controls */

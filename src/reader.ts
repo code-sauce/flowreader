@@ -95,31 +95,31 @@ export function mountReader(
   const progressEl = container.querySelector('#reader-progress') as HTMLElement;
   const modeBtn = container.querySelector('#reader-mode-btn') as HTMLElement;
 
-  function renderGradientWord(word: string, opacity: number, isCurrent: boolean): string {
+  function renderGradientLine(word: string, opacity: number, isCurrent: boolean): string {
     if (isCurrent) {
       const orpIdx = getOrpIndex(word);
       const before = word.slice(0, orpIdx);
       const orp = word[orpIdx] ?? '';
       const after = word.slice(orpIdx + 1);
-      return `<span class="gradient-word gradient-current" style="opacity:1"><span class="reader-before">${before}</span><span class="reader-orp">${orp}</span><span class="reader-after">${after}</span></span>`;
+      return `<div class="gradient-line gradient-current" style="opacity:1">${before}<span class="gradient-orp">${orp}</span>${after}</div>`;
     }
-    return `<span class="gradient-word" style="opacity:${opacity}">${word}</span>`;
+    return `<div class="gradient-line" style="opacity:${opacity}">${word}</div>`;
   }
 
   function renderGradient(): void {
-    const chunks: string[] = [];
+    const lines: string[] = [];
     for (let offset = -GRADIENT_WINDOW; offset <= GRADIENT_WINDOW; offset++) {
       const idx = state.position + offset;
       const word = state.words[idx] ?? '';
       if (!word) {
-        chunks.push(`<span class="gradient-word" style="opacity:0">&nbsp;</span>`);
+        lines.push(`<div class="gradient-line" style="opacity:0">&nbsp;</div>`);
         continue;
       }
       const absOffset = Math.abs(offset);
       const opacity = GRADIENT_OPACITIES[absOffset] ?? 0.15;
-      chunks.push(renderGradientWord(word, opacity, offset === 0));
+      lines.push(renderGradientLine(word, opacity, offset === 0));
     }
-    gradientEl.innerHTML = chunks.join('');
+    gradientEl.innerHTML = lines.join('');
   }
 
   function renderRsvp(): void {
@@ -289,7 +289,15 @@ export function mountReader(
     updateWpm(Number(slider.value));
   });
 
-  modeBtn.addEventListener('click', toggleMode);
+  modeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleMode();
+  });
+
+  const display = container.querySelector('#reader-display') as HTMLElement;
+  display.addEventListener('click', () => {
+    state.playing ? pause() : play();
+  });
 
   document.addEventListener('keydown', handleKey);
 
