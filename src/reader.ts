@@ -40,16 +40,7 @@ export function createReaderState(words: string[], wpm: number, position = 0, mo
   return { words, position, wpm, playing: false, mode };
 }
 
-const GRADIENT_CONTEXT = 30; // words on each side of current
-
-function getBlurLevel(distance: number): { opacity: number; blur: number } {
-  if (distance === 0) return { opacity: 1, blur: 0 };
-  if (distance <= 2) return { opacity: 0.9, blur: 0 };
-  if (distance <= 5) return { opacity: 0.65, blur: 0.8 };
-  if (distance <= 10) return { opacity: 0.4, blur: 2 };
-  if (distance <= 18) return { opacity: 0.25, blur: 3.5 };
-  return { opacity: 0.15, blur: 5 };
-}
+// Page mode: show ~100 words as a static paragraph, highlight moves through
 
 export function adjustWpm(current: number, direction: 'up' | 'down'): number {
   const next = direction === 'up' ? current + 25 : current - 25;
@@ -102,37 +93,55 @@ export function mountReader(
   const progressEl = container.querySelector('#reader-progress') as HTMLElement;
   const modeBtn = container.querySelector('#reader-mode-btn') as HTMLElement;
 
-  function renderGradient(): void {
-    const start = Math.max(0, state.position - GRADIENT_CONTEXT);
-    const end = Math.min(state.words.length, state.position + GRADIENT_CONTEXT + 1);
-    const parts: string[] = [];
+  const PAGE_SIZE = 80; // words per page
+  let pageStart = 0;
+  let pageEnd = 0;
+  let prevFocusEl: HTMLElement | null = null;
 
-    for (let i = start; i < end; i++) {
-      const word = state.words[i];
-      const distance = Math.abs(i - state.position);
-      const { opacity, blur } = getBlurLevel(distance);
-      const blurStyle = blur > 0 ? `filter:blur(${blur}px);` : '';
-
-      if (i === state.position) {
-        const orpIdx = getOrpIndex(word);
-        const before = word.slice(0, orpIdx);
-        const orp = word[orpIdx] ?? '';
-        const after = word.slice(orpIdx + 1);
-        parts.push(`<span class="gw gw-focus" data-idx="${i}" style="opacity:${opacity};${blurStyle}">${before}<span class="gradient-orp">${orp}</span>${after}</span>`);
-      } else {
-        parts.push(`<span class="gw" style="opacity:${opacity};${blurStyle}">${word}</span>`);
-      }
+  function buildPage(): void {
+    // Build a page of words centered around current position
+    pageStart = Math.max(0, state.position - Math.floor(PAGE_SIZE / 2));
+    pageEnd = Math.min(state.words.length, pageStart + PAGE_SIZE);
+    // Adjust start if we're near the end
+    if (pageEnd - pageStart < PAGE_SIZE && pageStart > 0) {
+      pageStart = Math.max(0, pageEnd - PAGE_SIZE);
     }
 
+    const parts: string[] = [];
+    for (let i = pageStart; i < pageEnd; i++) {
+      parts.push(`<span class="gw" data-idx="${i}">${state.words[i]}</span>`);
+    }
     gradientEl.innerHTML = parts.join(' ');
+    prevFocusEl = null;
+  }
 
-    // Scroll the focused word into center
-    requestAnimationFrame(() => {
-      const focusEl = gradientEl.querySelector('.gw-focus') as HTMLElement | null;
-      if (focusEl) {
-        focusEl.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
-      }
-    });
+  function renderGradient(): void {
+    // Rebuild page if current word is outside the rendered range
+    if (state.position < pageStart || state.position >= pageEnd) {
+      buildPage();
+    }
+
+    // Remove highlight from previous word
+    if (prevFocusEl) {
+      prevFocusEl.classList.remove('gw-focus');
+      prevFocusEl.innerHTML = state.words[Number(prevFocusEl.dataset.idx)];
+    }
+
+    // Add highlight to current word
+    const el = gradientEl.querySelector(`[data-idx="${state.position}"]`) as HTMLElement | null;
+    if (el) {
+      const word = state.words[state.position];
+      const orpIdx = getOrpIndex(word);
+      const before = word.slice(0, orpIdx);
+      const orp = word[orpIdx] ?? '';
+      const after = word.slice(orpIdx + 1);
+      el.innerHTML = `${before}<span class="gradient-orp">${orp}</span>${after}`;
+      el.classList.add('gw-focus');
+      prevFocusEl = el;
+
+      // Smooth scroll to keep focused word visible
+      el.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    }
   }
 
   function renderRsvp(): void {
@@ -153,6 +162,7 @@ export function mountReader(
       rsvpWordEl.style.display = 'none';
       if (notchEl) notchEl.style.display = 'none';
       gradientEl.style.display = '';
+      buildPage();
     }
     modeBtn.textContent = state.mode === 'rsvp' ? 'RSVP' : 'Gradient';
   }
