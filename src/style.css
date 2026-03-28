@@ -122,20 +122,23 @@ html, body {
 }
 
 .gw {
-  color: #333;
+  color: var(--text);
 }
 
 .gw-focus {
-  color: var(--text-bright);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
 }
 
 .gw-paused {
-  animation: pulse 2s ease-in-out infinite;
+  animation: pulse-underline 2s ease-in-out infinite;
 }
 
-.gradient-orp {
-  color: var(--accent);
-  font-weight: bold;
+@keyframes pulse-underline {
+  0%, 100% { text-decoration-color: var(--accent); }
+  50% { text-decoration-color: transparent; }
 }
 
 /* Controls */

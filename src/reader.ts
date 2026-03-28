@@ -154,18 +154,11 @@ export function mountReader(
     // Remove highlight from previous word
     if (prevFocusEl) {
       prevFocusEl.classList.remove('gw-focus');
-      prevFocusEl.innerHTML = state.words[Number(prevFocusEl.dataset.idx)];
     }
 
     // Add highlight to current word
     const el = gradientEl.querySelector(`[data-idx="${state.position}"]`) as HTMLElement | null;
     if (el) {
-      const word = state.words[state.position];
-      const orpIdx = getOrpIndex(word);
-      const before = word.slice(0, orpIdx);
-      const orp = word[orpIdx] ?? '';
-      const after = word.slice(orpIdx + 1);
-      el.innerHTML = `${before}<span class="gradient-orp">${orp}</span>${after}`;
       el.classList.add('gw-focus');
       prevFocusEl = el;
 
