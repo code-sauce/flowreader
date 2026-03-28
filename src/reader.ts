@@ -138,7 +138,7 @@ export function mountReader(
       const centerY = containerRect.top + containerRect.height * 0.45;
       const offset = elRect.top - centerY;
       if (Math.abs(offset) > 0.5) {
-        gradientEl.scrollTop += offset * 0.03;
+        gradientEl.scrollTop += offset * 0.01;
       }
     }
     scrollRaf = requestAnimationFrame(scrollLoop);
