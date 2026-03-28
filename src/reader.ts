@@ -124,32 +124,22 @@ export function mountReader(
 
   // --- Page mode (static paragraph, moving highlight) ---
 
-  const PAGE_SIZE = 80;
-  const PAGE_OVERLAP = 10; // keep last N words when rebuilding
-  let pageStart = 0;
-  let pageEnd = 0;
+  let pageBuilt = false;
   let prevFocusEl: HTMLElement | null = null;
 
   function buildPage(): void {
-    pageStart = Math.max(0, state.position - Math.floor(PAGE_SIZE / 2));
-    pageEnd = Math.min(state.words.length, pageStart + PAGE_SIZE);
-    if (pageEnd - pageStart < PAGE_SIZE && pageStart > 0) {
-      pageStart = Math.max(0, pageEnd - PAGE_SIZE);
-    }
-
+    // Render ALL words at once -- scrolling handles visibility
     const parts: string[] = [];
-    for (let i = pageStart; i < pageEnd; i++) {
+    for (let i = 0; i < state.words.length; i++) {
       parts.push(`<span class="gw" data-idx="${i}">${state.words[i]}</span>`);
     }
     gradientEl.innerHTML = parts.join(' ');
     prevFocusEl = null;
+    pageBuilt = true;
   }
 
   function renderGradient(): void {
-    // Rebuild page if current word is outside rendered range (with overlap)
-    if (state.position < pageStart || state.position >= pageEnd - PAGE_OVERLAP) {
-      buildPage();
-    }
+    if (!pageBuilt) buildPage();
 
     // Remove highlight from previous word
     if (prevFocusEl) {
@@ -162,7 +152,11 @@ export function mountReader(
       el.classList.add('gw-focus');
       prevFocusEl = el;
 
-      el.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+      // Smooth scroll to keep current word near vertical center
+      const containerRect = gradientEl.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      const targetScroll = gradientEl.scrollTop + (elRect.top - containerRect.top) - (containerRect.height / 2);
+      gradientEl.scrollTo({ top: targetScroll, behavior: 'smooth' });
     }
   }
 
@@ -185,7 +179,7 @@ export function mountReader(
     } else {
       rsvpWordEl.style.display = 'none';
       gradientEl.style.display = '';
-      buildPage();
+      if (!pageBuilt) buildPage();
     }
     modeBtn.textContent = state.mode === 'rsvp' ? 'RSVP' : 'Page';
   }
