@@ -1,11 +1,14 @@
 import { getOrpIndex } from './orp';
 import { storage } from './storage';
 
+export type ReadingMode = 'rsvp' | 'gradient';
+
 export interface ReaderState {
   words: string[];
   position: number;
   wpm: number;
   playing: boolean;
+  mode: ReadingMode;
 }
 
 export function calculateDelay(word: string, nextWord: string, wpm: number): number {
@@ -33,9 +36,12 @@ export function calculateDelay(word: string, nextWord: string, wpm: number): num
   return base * multiplier;
 }
 
-export function createReaderState(words: string[], wpm: number, position = 0): ReaderState {
-  return { words, position, wpm, playing: false };
+export function createReaderState(words: string[], wpm: number, position = 0, mode: ReadingMode = 'rsvp'): ReaderState {
+  return { words, position, wpm, playing: false, mode };
 }
+
+const GRADIENT_WINDOW = 3; // words on each side of center
+const GRADIENT_OPACITIES = [1, 0.7, 0.4, 0.15]; // center, ±1, ±2, ±3
 
 export function adjustWpm(current: number, direction: 'up' | 'down'): number {
   const next = direction === 'up' ? current + 25 : current - 25;
@@ -47,9 +53,10 @@ export function mountReader(
   words: string[],
   wpm: number,
   position: number,
-  articleId: string
+  articleId: string,
+  mode: ReadingMode = 'rsvp'
 ): void {
-  let state = createReaderState(words, wpm, position);
+  let state = createReaderState(words, wpm, position, mode);
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let controlsTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -60,11 +67,15 @@ export function mountReader(
         <div class="reader-word">
           <span class="reader-before"></span><span class="reader-orp"></span><span class="reader-after"></span>
         </div>
+        <div class="reader-gradient" style="display:none"></div>
       </div>
       <div id="reader-controls">
-        <div id="reader-wpm">${state.wpm} WPM</div>
+        <div class="reader-controls-row">
+          <div id="reader-wpm">${state.wpm} WPM</div>
+          <button id="reader-mode-btn" class="reader-mode-btn">${state.mode === 'rsvp' ? 'RSVP' : 'Gradient'}</button>
+        </div>
         <input type="range" id="reader-slider" min="100" max="1000" step="25" value="${state.wpm}" />
-        <div class="reader-hint">Space: play/pause · ↑↓: speed · ←→: skip · Esc: exit</div>
+        <div class="reader-hint">Space: play/pause · ↑↓: speed · ←→: skip · M: mode · Esc: exit</div>
       </div>
       <div id="reader-progress-bar">
         <div id="reader-progress" style="width: 0%"></div>
@@ -72,34 +83,90 @@ export function mountReader(
     </div>
   `;
 
-  const wordEl = container.querySelector('.reader-word') as HTMLElement;
   const beforeEl = container.querySelector('.reader-before') as HTMLElement;
   const orpEl = container.querySelector('.reader-orp') as HTMLElement;
   const afterEl = container.querySelector('.reader-after') as HTMLElement;
   const notchEl = container.querySelector('.reader-notch') as HTMLElement;
+  const rsvpWordEl = container.querySelector('.reader-word') as HTMLElement;
+  const gradientEl = container.querySelector('.reader-gradient') as HTMLElement;
   const wpmLabel = container.querySelector('#reader-wpm') as HTMLElement;
   const slider = container.querySelector('#reader-slider') as HTMLInputElement;
   const controls = container.querySelector('#reader-controls') as HTMLElement;
   const progressEl = container.querySelector('#reader-progress') as HTMLElement;
+  const modeBtn = container.querySelector('#reader-mode-btn') as HTMLElement;
 
-  function renderWord(): void {
+  function renderGradientWord(word: string, opacity: number, isCurrent: boolean): string {
+    if (isCurrent) {
+      const orpIdx = getOrpIndex(word);
+      const before = word.slice(0, orpIdx);
+      const orp = word[orpIdx] ?? '';
+      const after = word.slice(orpIdx + 1);
+      return `<span class="gradient-word gradient-current" style="opacity:1"><span class="reader-before">${before}</span><span class="reader-orp">${orp}</span><span class="reader-after">${after}</span></span>`;
+    }
+    return `<span class="gradient-word" style="opacity:${opacity}">${word}</span>`;
+  }
+
+  function renderGradient(): void {
+    const chunks: string[] = [];
+    for (let offset = -GRADIENT_WINDOW; offset <= GRADIENT_WINDOW; offset++) {
+      const idx = state.position + offset;
+      const word = state.words[idx] ?? '';
+      if (!word) {
+        chunks.push(`<span class="gradient-word" style="opacity:0">&nbsp;</span>`);
+        continue;
+      }
+      const absOffset = Math.abs(offset);
+      const opacity = GRADIENT_OPACITIES[absOffset] ?? 0.15;
+      chunks.push(renderGradientWord(word, opacity, offset === 0));
+    }
+    gradientEl.innerHTML = chunks.join('');
+  }
+
+  function renderRsvp(): void {
     const word = state.words[state.position] ?? '';
     const orpIdx = getOrpIndex(word);
     beforeEl.textContent = word.slice(0, orpIdx);
     orpEl.textContent = word[orpIdx] ?? '';
     afterEl.textContent = word.slice(orpIdx + 1);
 
-    const progress = state.words.length > 1
-      ? (state.position / (state.words.length - 1)) * 100
-      : 100;
-    progressEl.style.width = `${progress}%`;
-
-    // Position notch above ORP letter
     requestAnimationFrame(() => {
       const orpRect = orpEl.getBoundingClientRect();
       const displayRect = (container.querySelector('#reader-display') as HTMLElement).getBoundingClientRect();
       notchEl.style.left = `${orpRect.left - displayRect.left + orpRect.width / 2}px`;
     });
+  }
+
+  function applyModeVisibility(): void {
+    if (state.mode === 'rsvp') {
+      rsvpWordEl.style.display = '';
+      notchEl.style.display = '';
+      gradientEl.style.display = 'none';
+    } else {
+      rsvpWordEl.style.display = 'none';
+      notchEl.style.display = 'none';
+      gradientEl.style.display = '';
+    }
+    modeBtn.textContent = state.mode === 'rsvp' ? 'RSVP' : 'Gradient';
+  }
+
+  function renderWord(): void {
+    if (state.mode === 'gradient') {
+      renderGradient();
+    } else {
+      renderRsvp();
+    }
+
+    const progress = state.words.length > 1
+      ? (state.position / (state.words.length - 1)) * 100
+      : 100;
+    progressEl.style.width = `${progress}%`;
+  }
+
+  function toggleMode(): void {
+    state.mode = state.mode === 'rsvp' ? 'gradient' : 'rsvp';
+    applyModeVisibility();
+    renderWord();
+    storage.setSetting('readingMode', state.mode);
   }
 
   function savePosition(): void {
@@ -200,6 +267,11 @@ export function mountReader(
         e.preventDefault();
         exit();
         break;
+      case 'm':
+      case 'M':
+        e.preventDefault();
+        toggleMode();
+        break;
       case 'r':
       case 'R':
         e.preventDefault();
@@ -217,6 +289,8 @@ export function mountReader(
     updateWpm(Number(slider.value));
   });
 
+  modeBtn.addEventListener('click', toggleMode);
+
   document.addEventListener('keydown', handleKey);
 
   // Clean up listener when reader is removed from DOM
@@ -228,6 +302,7 @@ export function mountReader(
   });
   observer.observe(document.body, { childList: true, subtree: true });
 
+  applyModeVisibility();
   renderWord();
 
   // Auto-play after 500ms

@@ -77,6 +77,37 @@ html, body {
   font-weight: bold;
 }
 
+/* Gradient mode */
+
+.reader-gradient {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 24px;
+  font-family: var(--font-mono);
+  font-size: clamp(32px, 5vw, 52px);
+  white-space: nowrap;
+}
+
+.gradient-word {
+  color: var(--text);
+  transition: opacity 0.15s ease;
+}
+
+.gradient-current {
+  font-size: clamp(48px, 8vw, 80px);
+}
+
+.gradient-current .reader-orp {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.gradient-current .reader-before,
+.gradient-current .reader-after {
+  color: var(--text-bright);
+}
+
 /* Controls */
 
 #reader-controls {
@@ -97,10 +128,33 @@ html, body {
   pointer-events: none;
 }
 
+.reader-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 #reader-wpm {
   font-family: var(--font-mono);
   font-size: 14px;
   color: var(--text);
+}
+
+.reader-mode-btn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg-surface);
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.reader-mode-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-bright);
 }
 
 #reader-slider {

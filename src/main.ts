@@ -1,6 +1,6 @@
 import './style.css';
 import { mountHome } from './home';
-import { mountReader } from './reader';
+import { mountReader, ReadingMode } from './reader';
 import { storage } from './storage';
 
 const app = document.getElementById('app')!;
@@ -15,7 +15,8 @@ async function navigateToReader(articleId: string): Promise<void> {
     await navigateToHome();
     return;
   }
-  mountReader(app, article.words, article.lastWPM, article.currentPosition, article.id);
+  const mode = (await storage.getSetting('readingMode') as ReadingMode) || 'rsvp';
+  mountReader(app, article.words, article.lastWPM, article.currentPosition, article.id, mode);
 }
 
 // Listen for navigation events from views

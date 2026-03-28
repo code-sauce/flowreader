@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateDelay, ReaderState, createReaderState, adjustWpm } from '../src/reader';
+import { calculateDelay, ReaderState, createReaderState, adjustWpm, ReadingMode } from '../src/reader';
 
 describe('calculateDelay', () => {
   const baseDelay = 60_000 / 300; // 200ms at 300 WPM
@@ -54,11 +54,17 @@ describe('createReaderState', () => {
     expect(state.position).toBe(0);
     expect(state.wpm).toBe(300);
     expect(state.playing).toBe(false);
+    expect(state.mode).toBe('rsvp');
   });
 
   it('accepts a starting position', () => {
     const state = createReaderState(['a', 'b', 'c'], 300, 2);
     expect(state.position).toBe(2);
+  });
+
+  it('accepts a reading mode', () => {
+    const state = createReaderState(['a', 'b'], 300, 0, 'gradient');
+    expect(state.mode).toBe('gradient');
   });
 });
 
