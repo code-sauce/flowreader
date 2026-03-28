@@ -55,9 +55,10 @@ html, body {
 
 .reader-notch {
   width: 2px;
-  height: 40px;
+  height: 30px;
   background: var(--accent);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  opacity: 0.6;
 }
 
 .reader-word {
@@ -77,30 +78,30 @@ html, body {
   font-weight: bold;
 }
 
-/* Gradient mode (vertical) */
+/* Gradient mode (horizontal blur) */
 
 .reader-gradient {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: baseline;
   justify-content: center;
-  gap: 8px;
+  gap: 0.4em;
   font-family: var(--font-mono);
+  font-size: clamp(28px, 5vw, 44px);
   white-space: nowrap;
+  overflow: hidden;
+  width: 100%;
+  padding: 0 24px;
 }
 
-.gradient-line {
+.gradient-word {
   color: var(--text);
-  font-size: clamp(24px, 4vw, 36px);
-  line-height: 1.6;
-  transition: opacity 0.15s ease, font-size 0.15s ease;
-  text-align: center;
+  transition: opacity 0.12s ease, filter 0.12s ease;
+  flex-shrink: 0;
 }
 
-.gradient-current {
+.gradient-focus {
   color: var(--text-bright);
-  font-size: clamp(48px, 8vw, 80px);
-  line-height: 1.4;
+  font-size: 1.3em;
 }
 
 .gradient-orp {

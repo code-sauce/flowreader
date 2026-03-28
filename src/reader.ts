@@ -40,8 +40,16 @@ export function createReaderState(words: string[], wpm: number, position = 0, mo
   return { words, position, wpm, playing: false, mode };
 }
 
-const GRADIENT_WINDOW = 3; // words on each side of center
-const GRADIENT_OPACITIES = [1, 0.7, 0.4, 0.15]; // center, ±1, ±2, ±3
+const GRADIENT_WINDOW = 5; // words on each side of center
+// [opacity, blur in px] per distance from center
+const GRADIENT_LEVELS: [number, number][] = [
+  [1, 0],      // current word
+  [0.85, 0],   // ±1: still readable
+  [0.6, 0.5],  // ±2: slightly soft
+  [0.4, 1.5],  // ±3: noticeably blurred
+  [0.25, 3],   // ±4: background blur
+  [0.15, 4.5], // ±5: barely visible
+];
 
 export function adjustWpm(current: number, direction: 'up' | 'down'): number {
   const next = direction === 'up' ? current + 25 : current - 25;
@@ -86,7 +94,6 @@ export function mountReader(
   const beforeEl = container.querySelector('.reader-before') as HTMLElement;
   const orpEl = container.querySelector('.reader-orp') as HTMLElement;
   const afterEl = container.querySelector('.reader-after') as HTMLElement;
-  const notchEl = container.querySelector('.reader-notch') as HTMLElement;
   const rsvpWordEl = container.querySelector('.reader-word') as HTMLElement;
   const gradientEl = container.querySelector('.reader-gradient') as HTMLElement;
   const wpmLabel = container.querySelector('#reader-wpm') as HTMLElement;
@@ -95,31 +102,32 @@ export function mountReader(
   const progressEl = container.querySelector('#reader-progress') as HTMLElement;
   const modeBtn = container.querySelector('#reader-mode-btn') as HTMLElement;
 
-  function renderGradientLine(word: string, opacity: number, isCurrent: boolean): string {
-    if (isCurrent) {
+  function renderGradientWord(word: string, distance: number): string {
+    const [opacity, blur] = GRADIENT_LEVELS[distance] ?? GRADIENT_LEVELS[GRADIENT_LEVELS.length - 1];
+    const blurStyle = blur > 0 ? `filter:blur(${blur}px);` : '';
+
+    if (distance === 0) {
       const orpIdx = getOrpIndex(word);
       const before = word.slice(0, orpIdx);
       const orp = word[orpIdx] ?? '';
       const after = word.slice(orpIdx + 1);
-      return `<div class="gradient-line gradient-current" style="opacity:1">${before}<span class="gradient-orp">${orp}</span>${after}</div>`;
+      return `<span class="gradient-word gradient-focus" style="opacity:${opacity};${blurStyle}">${before}<span class="gradient-orp">${orp}</span>${after}</span>`;
     }
-    return `<div class="gradient-line" style="opacity:${opacity}">${word}</div>`;
+    return `<span class="gradient-word" style="opacity:${opacity};${blurStyle}">${word}</span>`;
   }
 
   function renderGradient(): void {
-    const lines: string[] = [];
+    const parts: string[] = [];
     for (let offset = -GRADIENT_WINDOW; offset <= GRADIENT_WINDOW; offset++) {
       const idx = state.position + offset;
       const word = state.words[idx] ?? '';
       if (!word) {
-        lines.push(`<div class="gradient-line" style="opacity:0">&nbsp;</div>`);
+        parts.push(`<span class="gradient-word" style="opacity:0">&nbsp;</span>`);
         continue;
       }
-      const absOffset = Math.abs(offset);
-      const opacity = GRADIENT_OPACITIES[absOffset] ?? 0.15;
-      lines.push(renderGradientLine(word, opacity, offset === 0));
+      parts.push(renderGradientWord(word, Math.abs(offset)));
     }
-    gradientEl.innerHTML = lines.join('');
+    gradientEl.innerHTML = parts.join('');
   }
 
   function renderRsvp(): void {
@@ -128,22 +136,17 @@ export function mountReader(
     beforeEl.textContent = word.slice(0, orpIdx);
     orpEl.textContent = word[orpIdx] ?? '';
     afterEl.textContent = word.slice(orpIdx + 1);
-
-    requestAnimationFrame(() => {
-      const orpRect = orpEl.getBoundingClientRect();
-      const displayRect = (container.querySelector('#reader-display') as HTMLElement).getBoundingClientRect();
-      notchEl.style.left = `${orpRect.left - displayRect.left + orpRect.width / 2}px`;
-    });
   }
 
   function applyModeVisibility(): void {
+    const notchEl = container.querySelector('.reader-notch') as HTMLElement;
     if (state.mode === 'rsvp') {
       rsvpWordEl.style.display = '';
-      notchEl.style.display = '';
+      if (notchEl) notchEl.style.display = '';
       gradientEl.style.display = 'none';
     } else {
       rsvpWordEl.style.display = 'none';
-      notchEl.style.display = 'none';
+      if (notchEl) notchEl.style.display = 'none';
       gradientEl.style.display = '';
     }
     modeBtn.textContent = state.mode === 'rsvp' ? 'RSVP' : 'Gradient';
