@@ -152,14 +152,13 @@ export function mountReader(
       el.classList.add('gw-focus');
       prevFocusEl = el;
 
-      // Only scroll when the word nears the bottom 20% of the container
+      // Keep focused word near vertical center with gentle continuous scroll
       const containerRect = gradientEl.getBoundingClientRect();
       const elRect = el.getBoundingClientRect();
-      const threshold = containerRect.bottom - containerRect.height * 0.2;
-      if (elRect.top > threshold) {
-        // Scroll so the word lands at ~35% from top
-        const target = gradientEl.scrollTop + (elRect.top - containerRect.top) - containerRect.height * 0.35;
-        gradientEl.scrollTop = target;
+      const centerY = containerRect.top + containerRect.height * 0.45;
+      const offset = elRect.top - centerY;
+      if (Math.abs(offset) > 2) {
+        gradientEl.scrollTop += offset;
       }
     }
   }
