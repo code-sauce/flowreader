@@ -126,6 +126,23 @@ export function mountReader(
 
   let pageBuilt = false;
   let prevFocusEl: HTMLElement | null = null;
+  let scrollTarget: HTMLElement | null = null;
+  let scrollRaf: number | null = null;
+
+  // Continuous easing scroll loop -- always running in page mode
+  // Moves 8% of the remaining distance each frame = ~200ms ease
+  function scrollLoop(): void {
+    if (scrollTarget && gradientEl.offsetParent !== null) {
+      const containerRect = gradientEl.getBoundingClientRect();
+      const elRect = scrollTarget.getBoundingClientRect();
+      const centerY = containerRect.top + containerRect.height * 0.45;
+      const offset = elRect.top - centerY;
+      if (Math.abs(offset) > 0.5) {
+        gradientEl.scrollTop += offset * 0.08;
+      }
+    }
+    scrollRaf = requestAnimationFrame(scrollLoop);
+  }
 
   function buildPage(): void {
     // Render ALL words at once -- scrolling handles visibility
@@ -152,14 +169,7 @@ export function mountReader(
       el.classList.add('gw-focus');
       prevFocusEl = el;
 
-      // Keep focused word near vertical center with gentle continuous scroll
-      const containerRect = gradientEl.getBoundingClientRect();
-      const elRect = el.getBoundingClientRect();
-      const centerY = containerRect.top + containerRect.height * 0.45;
-      const offset = elRect.top - centerY;
-      if (Math.abs(offset) > 2) {
-        gradientEl.scrollTop += offset;
-      }
+      scrollTarget = el;
     }
   }
 
@@ -179,10 +189,12 @@ export function mountReader(
     if (state.mode === 'rsvp') {
       rsvpWordEl.style.display = '';
       gradientEl.style.display = 'none';
+      if (scrollRaf) { cancelAnimationFrame(scrollRaf); scrollRaf = null; }
     } else {
       rsvpWordEl.style.display = 'none';
       gradientEl.style.display = '';
       if (!pageBuilt) buildPage();
+      if (!scrollRaf) scrollLoop();
     }
     modeBtn.textContent = state.mode === 'rsvp' ? 'RSVP' : 'Page';
   }
@@ -306,6 +318,7 @@ export function mountReader(
   function exit(): void {
     pause();
     savePosition();
+    if (scrollRaf) { cancelAnimationFrame(scrollRaf); scrollRaf = null; }
     container.dispatchEvent(new CustomEvent('navigate', { detail: 'home', bubbles: true }));
   }
 
