@@ -81,7 +81,7 @@ export async function mountHome(container: HTMLElement): Promise<void> {
       <div class="home-input-area">
         <textarea
           id="home-textarea"
-          placeholder="Paste text here and press Enter to start reading..."
+          placeholder="Paste text here and press ⌘+Enter to start reading..."
           rows="6"
         ></textarea>
         <div class="home-actions">
@@ -113,7 +113,7 @@ export async function mountHome(container: HTMLElement): Promise<void> {
   });
 
   textarea.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       const text = textarea.value.trim();
       if (text) startReading(text, 'Pasted text');

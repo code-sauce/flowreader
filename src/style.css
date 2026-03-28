@@ -53,19 +53,15 @@ html, body {
   cursor: pointer;
 }
 
-.reader-notch {
-  width: 2px;
-  height: 30px;
-  background: var(--accent);
-  margin-bottom: 12px;
-  opacity: 0.6;
-}
-
 .reader-word {
   font-family: var(--font-mono);
   font-size: clamp(48px, 8vw, 80px);
   letter-spacing: 4px;
   white-space: nowrap;
+}
+
+.reader-word.paused {
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .reader-before,
@@ -76,6 +72,34 @@ html, body {
 .reader-orp {
   color: var(--accent);
   font-weight: bold;
+}
+
+/* Toast */
+
+.reader-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-mono);
+  font-size: 24px;
+  color: var(--text-bright);
+  background: rgba(30, 30, 30, 0.85);
+  padding: 10px 24px;
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 50;
+}
+
+.reader-toast.visible {
+  opacity: 1;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 /* Page mode (static paragraph, moving highlight) */
@@ -103,6 +127,10 @@ html, body {
 
 .gw-focus {
   color: var(--text-bright);
+}
+
+.gw-paused {
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .gradient-orp {

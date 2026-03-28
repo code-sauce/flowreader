@@ -40,11 +40,29 @@ export function createReaderState(words: string[], wpm: number, position = 0, mo
   return { words, position, wpm, playing: false, mode };
 }
 
-// Page mode: show ~100 words as a static paragraph, highlight moves through
-
 export function adjustWpm(current: number, direction: 'up' | 'down'): number {
   const next = direction === 'up' ? current + 25 : current - 25;
   return Math.min(1000, Math.max(100, next));
+}
+
+// Find the start of the current sentence (after last . ? !)
+function findSentenceStart(words: string[], from: number): number {
+  for (let i = from - 1; i >= 0; i--) {
+    const last = words[i][words[i].length - 1];
+    if (last === '.' || last === '?' || last === '!') return i + 1;
+  }
+  return 0;
+}
+
+// Find the start of the next sentence
+function findNextSentenceStart(words: string[], from: number): number {
+  for (let i = from; i < words.length; i++) {
+    const last = words[i][words[i].length - 1];
+    if (last === '.' || last === '?' || last === '!') {
+      return Math.min(i + 1, words.length - 1);
+    }
+  }
+  return words.length - 1;
 }
 
 export function mountReader(
@@ -58,23 +76,24 @@ export function mountReader(
   let state = createReaderState(words, wpm, position, mode);
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let controlsTimer: ReturnType<typeof setTimeout> | null = null;
+  let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
   container.innerHTML = `
     <div id="reader-view">
       <div id="reader-display">
-        <div class="reader-notch"></div>
         <div class="reader-word">
           <span class="reader-before"></span><span class="reader-orp"></span><span class="reader-after"></span>
         </div>
         <div class="reader-gradient" style="display:none"></div>
       </div>
+      <div id="reader-toast" class="reader-toast"></div>
       <div id="reader-controls">
         <div class="reader-controls-row">
           <div id="reader-wpm">${state.wpm} WPM</div>
-          <button id="reader-mode-btn" class="reader-mode-btn">${state.mode === 'rsvp' ? 'RSVP' : 'Gradient'}</button>
+          <button id="reader-mode-btn" class="reader-mode-btn">${state.mode === 'rsvp' ? 'RSVP' : 'Page'}</button>
         </div>
         <input type="range" id="reader-slider" min="100" max="1000" step="25" value="${state.wpm}" />
-        <div class="reader-hint">Space: play/pause · ↑↓: speed · ←→: skip · M: mode · Esc: exit</div>
+        <div class="reader-hint">Space: play/pause · ↑↓: speed · ←→: skip sentence · M: mode · Esc: exit</div>
       </div>
       <div id="reader-progress-bar">
         <div id="reader-progress" style="width: 0%"></div>
@@ -92,17 +111,28 @@ export function mountReader(
   const controls = container.querySelector('#reader-controls') as HTMLElement;
   const progressEl = container.querySelector('#reader-progress') as HTMLElement;
   const modeBtn = container.querySelector('#reader-mode-btn') as HTMLElement;
+  const toastEl = container.querySelector('#reader-toast') as HTMLElement;
 
-  const PAGE_SIZE = 80; // words per page
+  // --- Toast (brief feedback overlay) ---
+
+  function showToast(text: string): void {
+    toastEl.textContent = text;
+    toastEl.classList.add('visible');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('visible'), 800);
+  }
+
+  // --- Page mode (static paragraph, moving highlight) ---
+
+  const PAGE_SIZE = 80;
+  const PAGE_OVERLAP = 10; // keep last N words when rebuilding
   let pageStart = 0;
   let pageEnd = 0;
   let prevFocusEl: HTMLElement | null = null;
 
   function buildPage(): void {
-    // Build a page of words centered around current position
     pageStart = Math.max(0, state.position - Math.floor(PAGE_SIZE / 2));
     pageEnd = Math.min(state.words.length, pageStart + PAGE_SIZE);
-    // Adjust start if we're near the end
     if (pageEnd - pageStart < PAGE_SIZE && pageStart > 0) {
       pageStart = Math.max(0, pageEnd - PAGE_SIZE);
     }
@@ -116,8 +146,8 @@ export function mountReader(
   }
 
   function renderGradient(): void {
-    // Rebuild page if current word is outside the rendered range
-    if (state.position < pageStart || state.position >= pageEnd) {
+    // Rebuild page if current word is outside rendered range (with overlap)
+    if (state.position < pageStart || state.position >= pageEnd - PAGE_OVERLAP) {
       buildPage();
     }
 
@@ -139,10 +169,11 @@ export function mountReader(
       el.classList.add('gw-focus');
       prevFocusEl = el;
 
-      // Smooth scroll to keep focused word visible
       el.scrollIntoView({ block: 'nearest', behavior: 'instant' });
     }
   }
+
+  // --- RSVP mode ---
 
   function renderRsvp(): void {
     const word = state.words[state.position] ?? '';
@@ -152,19 +183,18 @@ export function mountReader(
     afterEl.textContent = word.slice(orpIdx + 1);
   }
 
+  // --- Shared ---
+
   function applyModeVisibility(): void {
-    const notchEl = container.querySelector('.reader-notch') as HTMLElement;
     if (state.mode === 'rsvp') {
       rsvpWordEl.style.display = '';
-      if (notchEl) notchEl.style.display = '';
       gradientEl.style.display = 'none';
     } else {
       rsvpWordEl.style.display = 'none';
-      if (notchEl) notchEl.style.display = 'none';
       gradientEl.style.display = '';
       buildPage();
     }
-    modeBtn.textContent = state.mode === 'rsvp' ? 'RSVP' : 'Gradient';
+    modeBtn.textContent = state.mode === 'rsvp' ? 'RSVP' : 'Page';
   }
 
   function renderWord(): void {
@@ -178,6 +208,22 @@ export function mountReader(
       ? (state.position / (state.words.length - 1)) * 100
       : 100;
     progressEl.style.width = `${progress}%`;
+
+    // Pause pulse: add/remove based on playing state
+    if (state.mode === 'rsvp') {
+      if (!state.playing) {
+        rsvpWordEl.classList.add('paused');
+      } else {
+        rsvpWordEl.classList.remove('paused');
+      }
+    }
+    if (state.mode === 'gradient' && prevFocusEl) {
+      if (!state.playing) {
+        prevFocusEl.classList.add('gw-paused');
+      } else {
+        prevFocusEl.classList.remove('gw-paused');
+      }
+    }
   }
 
   function toggleMode(): void {
@@ -185,6 +231,7 @@ export function mountReader(
     applyModeVisibility();
     renderWord();
     storage.setSetting('readingMode', state.mode);
+    showToast(state.mode === 'rsvp' ? 'RSVP' : 'Page');
   }
 
   function savePosition(): void {
@@ -203,6 +250,7 @@ export function mountReader(
     state.wpm = newWpm;
     wpmLabel.textContent = `${state.wpm} WPM`;
     slider.value = String(state.wpm);
+    showToast(`${state.wpm} WPM`);
   }
 
   function step(): void {
@@ -211,6 +259,7 @@ export function mountReader(
       state.playing = false;
       showControls();
       savePosition();
+      renderWord(); // update pause state
       return;
     }
 
@@ -232,6 +281,7 @@ export function mountReader(
     if (state.position >= state.words.length) return;
     state.playing = true;
     showControls();
+    showToast('▶');
     step();
   }
 
@@ -243,12 +293,22 @@ export function mountReader(
     }
     showControls();
     savePosition();
+    renderWord(); // update pause state
+    showToast('⏸');
   }
 
-  function skip(delta: number): void {
+  function skipBack(): void {
     const wasPlaying = state.playing;
     if (wasPlaying) pause();
-    state.position = Math.min(state.words.length - 1, Math.max(0, state.position + delta));
+    state.position = findSentenceStart(state.words, state.position);
+    renderWord();
+    if (wasPlaying) play();
+  }
+
+  function skipForward(): void {
+    const wasPlaying = state.playing;
+    if (wasPlaying) pause();
+    state.position = findNextSentenceStart(state.words, state.position);
     renderWord();
     if (wasPlaying) play();
   }
@@ -275,11 +335,11 @@ export function mountReader(
         break;
       case 'ArrowLeft':
         e.preventDefault();
-        skip(-5);
+        skipBack();
         break;
       case 'ArrowRight':
         e.preventDefault();
-        skip(5);
+        skipForward();
         break;
       case 'Escape':
         e.preventDefault();
