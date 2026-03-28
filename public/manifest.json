@@ -1,0 +1,16 @@
+{
+  "name": "FlowReader",
+  "short_name": "FlowReader",
+  "description": "RSVP speed reading for flow state",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#e74c3c",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

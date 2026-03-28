@@ -1,0 +1,25 @@
+{
+  "name": "rsvp-reader",
+  "version": "1.0.0",
+  "description": "RSVP speed reading for flow state",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "typescript": "^6.0.2",
+    "vite": "^7.3.1",
+    "vite-plugin-pwa": "^1.2.0"
+  },
+  "dependencies": {
+    "idb": "^8.0.3"
+  }
+}
