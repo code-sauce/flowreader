@@ -40,16 +40,16 @@ export function createReaderState(words: string[], wpm: number, position = 0, mo
   return { words, position, wpm, playing: false, mode };
 }
 
-const GRADIENT_WINDOW = 5; // words on each side of center
-// [opacity, blur in px] per distance from center
-const GRADIENT_LEVELS: [number, number][] = [
-  [1, 0],      // current word
-  [0.85, 0],   // ±1: still readable
-  [0.6, 0.5],  // ±2: slightly soft
-  [0.4, 1.5],  // ±3: noticeably blurred
-  [0.25, 3],   // ±4: background blur
-  [0.15, 4.5], // ±5: barely visible
-];
+const GRADIENT_CONTEXT = 30; // words on each side of current
+
+function getBlurLevel(distance: number): { opacity: number; blur: number } {
+  if (distance === 0) return { opacity: 1, blur: 0 };
+  if (distance <= 2) return { opacity: 0.9, blur: 0 };
+  if (distance <= 5) return { opacity: 0.65, blur: 0.8 };
+  if (distance <= 10) return { opacity: 0.4, blur: 2 };
+  if (distance <= 18) return { opacity: 0.25, blur: 3.5 };
+  return { opacity: 0.15, blur: 5 };
+}
 
 export function adjustWpm(current: number, direction: 'up' | 'down'): number {
   const next = direction === 'up' ? current + 25 : current - 25;
@@ -102,32 +102,37 @@ export function mountReader(
   const progressEl = container.querySelector('#reader-progress') as HTMLElement;
   const modeBtn = container.querySelector('#reader-mode-btn') as HTMLElement;
 
-  function renderGradientWord(word: string, distance: number): string {
-    const [opacity, blur] = GRADIENT_LEVELS[distance] ?? GRADIENT_LEVELS[GRADIENT_LEVELS.length - 1];
-    const blurStyle = blur > 0 ? `filter:blur(${blur}px);` : '';
-
-    if (distance === 0) {
-      const orpIdx = getOrpIndex(word);
-      const before = word.slice(0, orpIdx);
-      const orp = word[orpIdx] ?? '';
-      const after = word.slice(orpIdx + 1);
-      return `<span class="gradient-word gradient-focus" style="opacity:${opacity};${blurStyle}">${before}<span class="gradient-orp">${orp}</span>${after}</span>`;
-    }
-    return `<span class="gradient-word" style="opacity:${opacity};${blurStyle}">${word}</span>`;
-  }
-
   function renderGradient(): void {
+    const start = Math.max(0, state.position - GRADIENT_CONTEXT);
+    const end = Math.min(state.words.length, state.position + GRADIENT_CONTEXT + 1);
     const parts: string[] = [];
-    for (let offset = -GRADIENT_WINDOW; offset <= GRADIENT_WINDOW; offset++) {
-      const idx = state.position + offset;
-      const word = state.words[idx] ?? '';
-      if (!word) {
-        parts.push(`<span class="gradient-word" style="opacity:0">&nbsp;</span>`);
-        continue;
+
+    for (let i = start; i < end; i++) {
+      const word = state.words[i];
+      const distance = Math.abs(i - state.position);
+      const { opacity, blur } = getBlurLevel(distance);
+      const blurStyle = blur > 0 ? `filter:blur(${blur}px);` : '';
+
+      if (i === state.position) {
+        const orpIdx = getOrpIndex(word);
+        const before = word.slice(0, orpIdx);
+        const orp = word[orpIdx] ?? '';
+        const after = word.slice(orpIdx + 1);
+        parts.push(`<span class="gw gw-focus" data-idx="${i}" style="opacity:${opacity};${blurStyle}">${before}<span class="gradient-orp">${orp}</span>${after}</span>`);
+      } else {
+        parts.push(`<span class="gw" style="opacity:${opacity};${blurStyle}">${word}</span>`);
       }
-      parts.push(renderGradientWord(word, Math.abs(offset)));
     }
-    gradientEl.innerHTML = parts.join('');
+
+    gradientEl.innerHTML = parts.join(' ');
+
+    // Scroll the focused word into center
+    requestAnimationFrame(() => {
+      const focusEl = gradientEl.querySelector('.gw-focus') as HTMLElement | null;
+      if (focusEl) {
+        focusEl.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+      }
+    });
   }
 
   function renderRsvp(): void {

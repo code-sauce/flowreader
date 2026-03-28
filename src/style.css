@@ -78,30 +78,33 @@ html, body {
   font-weight: bold;
 }
 
-/* Gradient mode (horizontal blur) */
+/* Gradient mode (paragraph with blur spotlight) */
 
 .reader-gradient {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 0.4em;
   font-family: var(--font-mono);
-  font-size: clamp(28px, 5vw, 44px);
-  white-space: nowrap;
-  overflow: hidden;
-  width: 100%;
-  padding: 0 24px;
+  font-size: clamp(22px, 3.5vw, 32px);
+  line-height: 2;
+  text-align: center;
+  max-width: 720px;
+  padding: 40px 32px;
+  overflow-y: auto;
+  max-height: 100%;
+  scrollbar-width: none;
+  word-spacing: 0.15em;
 }
 
-.gradient-word {
+.reader-gradient::-webkit-scrollbar {
+  display: none;
+}
+
+.gw {
   color: var(--text);
-  transition: opacity 0.12s ease, filter 0.12s ease;
-  flex-shrink: 0;
+  transition: opacity 0.1s ease, filter 0.1s ease;
 }
 
-.gradient-focus {
+.gw-focus {
   color: var(--text-bright);
-  font-size: 1.3em;
+  font-weight: 600;
 }
 
 .gradient-orp {
