@@ -144,26 +144,8 @@ export function mountReader(
   let pageBuilt = false;
   let prevFocusEl: HTMLElement | null = null;
   let scrollRaf: number | null = null;
-
-  // Proportional scroll: map (words read / total words) to (scroll position / total scroll).
-  // Every word advances the target uniformly, even within the same line.
-  // The animation loop eases smoothly toward that target.
-  function getTargetScroll(): number {
-    const totalScroll = gradientEl.scrollHeight - gradientEl.clientHeight;
-    if (totalScroll <= 0 || state.words.length <= 1) return 0;
-
-    // Proportional: smooth uniform motion
-    const fraction = state.position / (state.words.length - 1);
-    const proportional = fraction * totalScroll;
-
-    // Element-based: actual centering
-    const el = gradientEl.querySelector(`[data-idx="${state.position}"]`) as HTMLElement | null;
-    if (!el) return proportional;
-    const centered = (el.offsetTop - gradientEl.offsetTop) - gradientEl.clientHeight * 0.45;
-
-    // Blend: 30% proportional (smooth) + 70% centered (accurate)
-    return proportional * 0.3 + centered * 0.7;
-  }
+  let wordElements: HTMLElement[] = [];
+  let currentScrollTarget = 0;
 
   function scrollLoop(): void {
     if (gradientEl.offsetParent === null) {
@@ -171,9 +153,7 @@ export function mountReader(
       return;
     }
 
-    const target = getTargetScroll();
-    const diff = target - gradientEl.scrollTop;
-    // Ease 4% per frame -- smooth and continuous since target moves every word
+    const diff = currentScrollTarget - gradientEl.scrollTop;
     if (Math.abs(diff) > 0.3) {
       gradientEl.scrollTop += diff * 0.04;
     }
@@ -182,29 +162,49 @@ export function mountReader(
   }
 
   function buildPage(): void {
-    // Render ALL words at once -- scrolling handles visibility
-    const parts: string[] = [];
+    const frag = document.createDocumentFragment();
+    wordElements = [];
     for (let i = 0; i < state.words.length; i++) {
-      parts.push(`<span class="gw" data-idx="${i}">${state.words[i]}</span>`);
+      if (i > 0) frag.appendChild(document.createTextNode(' '));
+      const span = document.createElement('span');
+      span.className = 'gw';
+      span.textContent = state.words[i];
+      wordElements.push(span);
+      frag.appendChild(span);
     }
-    gradientEl.innerHTML = parts.join(' ');
+    gradientEl.innerHTML = '';
+    gradientEl.appendChild(frag);
     prevFocusEl = null;
     pageBuilt = true;
+  }
+
+  function updateScrollTarget(): void {
+    const totalScroll = gradientEl.scrollHeight - gradientEl.clientHeight;
+    if (totalScroll <= 0 || state.words.length <= 1) { currentScrollTarget = 0; return; }
+
+    const fraction = state.position / (state.words.length - 1);
+    const proportional = fraction * totalScroll;
+
+    const el = wordElements[state.position];
+    if (!el) { currentScrollTarget = proportional; return; }
+    const centered = el.offsetTop - gradientEl.offsetTop - gradientEl.clientHeight * 0.45;
+
+    currentScrollTarget = proportional * 0.3 + centered * 0.7;
   }
 
   function renderGradient(): void {
     if (!pageBuilt) buildPage();
 
-    // Remove highlight from previous word
     if (prevFocusEl) {
       prevFocusEl.classList.remove('gw-focus');
+      prevFocusEl.classList.remove('gw-paused');
     }
 
-    // Add highlight to current word
-    const el = gradientEl.querySelector(`[data-idx="${state.position}"]`) as HTMLElement | null;
+    const el = wordElements[state.position];
     if (el) {
       el.classList.add('gw-focus');
       prevFocusEl = el;
+      updateScrollTarget();
     }
   }
 
