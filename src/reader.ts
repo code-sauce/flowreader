@@ -236,15 +236,12 @@ export function mountReader(
     gradientEl.appendChild(frag);
     prevFocusEl = null;
 
-    // Snap scroll so the current word is visible
+    // Snap scroll to center the current word
     const focusIdx = state.position - renderedStart;
     const focusEl = wordElements[focusIdx];
     if (focusEl) {
       const elTop = focusEl.offsetTop - gradientEl.offsetTop;
-      // If word is in the top half of the content, start from top (no blank space)
-      // Otherwise center it
-      const centered = elTop - gradientEl.clientHeight * 0.45;
-      gradientEl.scrollTop = Math.max(0, centered);
+      gradientEl.scrollTop = Math.max(0, elTop - gradientEl.clientHeight * 0.45);
     }
 
     pageIndicator.textContent = `Page ${page + 1} of ${totalPages}`;
@@ -254,7 +251,6 @@ export function mountReader(
     page = Math.max(0, Math.min(page, totalPages - 1));
     if (page === currentPage && wordElements.length > 0) return;
     buildPage(page);
-    gradientEl.scrollTop = 0; // reset scroll on explicit page jump
     state.position = getPageStart(page);
     renderGradient();
     savePosition();
