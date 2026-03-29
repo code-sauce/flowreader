@@ -77,6 +77,7 @@ export function mountReader(
   let state = createReaderState(words, wpm, position, mode);
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let controlsTimer: ReturnType<typeof setTimeout> | null = null;
+  let hasStarted = false; // don't show pause pulse until user has played at least once
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
   container.innerHTML = `
@@ -323,19 +324,21 @@ export function mountReader(
       : 100;
     progressEl.style.width = `${progress}%`;
 
-    // Pause pulse: add/remove based on playing state
-    if (state.mode === 'rsvp') {
-      if (!state.playing) {
-        rsvpWordEl.classList.add('paused');
-      } else {
-        rsvpWordEl.classList.remove('paused');
+    // Pause pulse: only after user has played at least once
+    if (hasStarted) {
+      if (state.mode === 'rsvp') {
+        if (!state.playing) {
+          rsvpWordEl.classList.add('paused');
+        } else {
+          rsvpWordEl.classList.remove('paused');
+        }
       }
-    }
-    if (state.mode === 'gradient' && prevFocusEl) {
-      if (!state.playing) {
-        prevFocusEl.classList.add('gw-paused');
-      } else {
-        prevFocusEl.classList.remove('gw-paused');
+      if (state.mode === 'gradient' && prevFocusEl) {
+        if (!state.playing) {
+          prevFocusEl.classList.add('gw-paused');
+        } else {
+          prevFocusEl.classList.remove('gw-paused');
+        }
       }
     }
   }
@@ -394,6 +397,7 @@ export function mountReader(
   function play(): void {
     if (state.position >= state.words.length) return;
     state.playing = true;
+    hasStarted = true;
     showControls();
     showToast('▶');
     step();
