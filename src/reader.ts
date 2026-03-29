@@ -88,18 +88,13 @@ export function mountReader(
         <div class="reader-gradient" style="display:none"></div>
       </div>
       <div id="reader-toast" class="reader-toast"></div>
-      <div id="reader-page-nav" style="display:none">
-        <button id="page-prev" class="page-nav-btn">&larr;</button>
-        <span id="page-indicator" class="page-indicator">Page 1 of 1</span>
-        <button id="page-next" class="page-nav-btn">&rarr;</button>
-      </div>
       <div id="reader-controls">
         <div class="reader-controls-row">
           <div id="reader-wpm">${state.wpm} WPM</div>
           <button id="reader-mode-btn" class="reader-mode-btn">${state.mode === 'rsvp' ? 'RSVP' : 'Page'}</button>
         </div>
         <input type="range" id="reader-slider" min="100" max="1000" step="25" value="${state.wpm}" />
-        <div class="reader-hint">Space: play/pause · ↑↓: speed · ←→: page · M: mode · Esc: exit</div>
+        <div class="reader-hint">Space: play/pause · ↑↓: speed · ←→: skip · M: mode · Esc: exit</div>
       </div>
       <div id="reader-progress-bar">
         <div id="reader-progress" style="width: 0%"></div>
@@ -144,31 +139,23 @@ export function mountReader(
     toastTimer = setTimeout(() => toastEl.classList.remove('visible'), 800);
   }
 
-  // --- Page mode (Kindle-style paged view) ---
+  // --- Page mode (infinite scroll, centered underline) ---
 
   let prevFocusEl: HTMLElement | null = null;
   let wordElements: HTMLElement[] = [];
   let scrollRaf: number | null = null;
-  const WORDS_PER_PAGE = 150;
-  let currentPage = 0;
-  let totalPages = 1;
+  let renderedStart = 0;
+  let renderedEnd = 0;
+  const WINDOW_SIZE = 500;
+  const REBUILD_MARGIN = 150;
 
-  const pageNav = container.querySelector('#reader-page-nav') as HTMLElement;
-  const pageIndicator = container.querySelector('#page-indicator') as HTMLElement;
-  const pagePrevBtn = container.querySelector('#page-prev') as HTMLElement;
-  const pageNextBtn = container.querySelector('#page-next') as HTMLElement;
-
-  let pageFlipLock = false; // prevent rapid re-flips
-
-  // Gentle auto-scroll to keep focused word near vertical center
-  // Also checks if scroll has passed halfway -- if so, flip page
   function scrollLoop(): void {
     if (gradientEl.offsetParent === null) {
       scrollRaf = requestAnimationFrame(scrollLoop);
       return;
     }
 
-    // Auto-scroll toward focused word
+    // Keep focused word near vertical center while playing
     if (prevFocusEl && state.playing) {
       const containerRect = gradientEl.getBoundingClientRect();
       const elRect = prevFocusEl.getBoundingClientRect();
@@ -179,53 +166,27 @@ export function mountReader(
       }
     }
 
-    // Check if scroll passed threshold -- flip page (only from manual scroll when paused)
-    if (!pageFlipLock && !state.playing) {
-      const maxScroll = gradientEl.scrollHeight - gradientEl.clientHeight;
-      if (maxScroll > 10) {
-        const scrollFraction = gradientEl.scrollTop / maxScroll;
-        if (scrollFraction > 0.9 && currentPage < totalPages - 1) {
-          pageFlipLock = true;
-          goToPage(currentPage + 1);
-          gradientEl.scrollTop = 0;
-          setTimeout(() => { pageFlipLock = false; }, 500);
-        } else if (scrollFraction < 0.02 && currentPage > 0) {
-          pageFlipLock = true;
-          const prevPage = currentPage - 1;
-          state.position = getPageStart(prevPage);
-          buildPage(prevPage);
-          gradientEl.scrollTop = gradientEl.scrollHeight - gradientEl.clientHeight;
-          renderGradient();
-          setTimeout(() => { pageFlipLock = false; }, 500);
-        }
-      }
-    }
-
     scrollRaf = requestAnimationFrame(scrollLoop);
   }
 
-  function getPageForPosition(pos: number): number {
-    return Math.floor(pos / WORDS_PER_PAGE);
-  }
+  function buildWindow(centerOn: number): void {
+    const newStart = Math.max(0, centerOn - Math.floor(WINDOW_SIZE / 2));
+    const newEnd = Math.min(state.words.length, newStart + WINDOW_SIZE);
 
-  function getPageStart(page: number): number {
-    return page * WORDS_PER_PAGE;
-  }
+    // Remember where the center word was visually
+    const oldEl = wordElements[centerOn - renderedStart];
+    let oldVisualTop = 0;
+    if (oldEl) {
+      oldVisualTop = oldEl.getBoundingClientRect().top;
+    }
 
-  let renderedStart = 0; // first word index currently in DOM
-
-  function buildPage(page: number): void {
-    currentPage = page;
-    totalPages = Math.ceil(state.words.length / WORDS_PER_PAGE);
-    // Render current + next 2 pages for continuous feel
-    const start = getPageStart(page);
-    const nextPageEnd = Math.min(start + WORDS_PER_PAGE * 3, state.words.length);
-    renderedStart = start;
+    renderedStart = newStart;
+    renderedEnd = newEnd;
 
     const frag = document.createDocumentFragment();
     wordElements = [];
-    for (let i = start; i < nextPageEnd; i++) {
-      if (i > start) frag.appendChild(document.createTextNode(' '));
+    for (let i = renderedStart; i < renderedEnd; i++) {
+      if (i > renderedStart) frag.appendChild(document.createTextNode(' '));
       const span = document.createElement('span');
       span.className = 'gw';
       span.textContent = state.words[i];
@@ -236,40 +197,52 @@ export function mountReader(
     gradientEl.appendChild(frag);
     prevFocusEl = null;
 
-    // Snap scroll to center the current word
-    const focusIdx = state.position - renderedStart;
-    const focusEl = wordElements[focusIdx];
-    if (focusEl) {
-      const elTop = focusEl.offsetTop - gradientEl.offsetTop;
-      gradientEl.scrollTop = Math.max(0, elTop - gradientEl.clientHeight * 0.45);
+    // Restore scroll so the center word stays in the same visual spot
+    const newEl = wordElements[centerOn - renderedStart];
+    if (newEl) {
+      if (oldVisualTop) {
+        // Match previous visual position
+        const newRect = newEl.getBoundingClientRect();
+        gradientEl.scrollTop += newRect.top - oldVisualTop;
+      } else {
+        // First build: center it
+        const elTop = newEl.offsetTop - gradientEl.offsetTop;
+        gradientEl.scrollTop = Math.max(0, elTop - gradientEl.clientHeight * 0.45);
+      }
     }
-
-    pageIndicator.textContent = `Page ${page + 1} of ${totalPages}`;
   }
 
-  function goToPage(page: number): void {
-    page = Math.max(0, Math.min(page, totalPages - 1));
-    if (page === currentPage && wordElements.length > 0) return;
-    buildPage(page);
-    state.position = getPageStart(page);
-    renderGradient();
-    savePosition();
+  // When paused and user scrolls, find the word nearest the center and update position
+  let scrollDebounce: ReturnType<typeof setTimeout> | null = null;
+  function onManualScroll(): void {
+    if (state.playing || state.mode !== 'gradient') return;
+    if (scrollDebounce) clearTimeout(scrollDebounce);
+    scrollDebounce = setTimeout(() => {
+      const centerY = gradientEl.scrollTop + gradientEl.clientHeight * 0.45;
+      let closest = state.position;
+      let closestDist = Infinity;
+      for (let i = 0; i < wordElements.length; i++) {
+        const el = wordElements[i];
+        const dist = Math.abs((el.offsetTop - gradientEl.offsetTop) - centerY);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closest = renderedStart + i;
+        }
+      }
+      if (closest !== state.position) {
+        state.position = closest;
+        renderGradient();
+        savePosition();
+      }
+    }, 200);
   }
 
   function renderGradient(): void {
-    const neededPage = getPageForPosition(state.position);
-
-    // Rebuild when entering the 2nd rendered page (keeps 1 page of lookahead)
-    const renderedEnd = renderedStart + wordElements.length;
-    const rebuildAt = renderedStart + WORDS_PER_PAGE; // start of 2nd rendered page
-    if (wordElements.length === 0 || state.position < renderedStart || state.position >= renderedEnd || (neededPage > currentPage && state.position >= rebuildAt)) {
-      buildPage(neededPage);
-    }
-
-    // Update page counter when underline crosses into next page
-    if (neededPage !== currentPage) {
-      currentPage = neededPage;
-      pageIndicator.textContent = `Page ${currentPage + 1} of ${totalPages}`;
+    // Rebuild window if position is near the edges
+    if (wordElements.length === 0 ||
+        state.position < renderedStart + REBUILD_MARGIN ||
+        state.position >= renderedEnd - REBUILD_MARGIN) {
+      buildWindow(state.position);
     }
 
     if (prevFocusEl) {
@@ -277,23 +250,13 @@ export function mountReader(
       prevFocusEl.classList.remove('gw-paused');
     }
 
-    const indexInArray = state.position - renderedStart;
-    const el = wordElements[indexInArray];
+    const idx = state.position - renderedStart;
+    const el = wordElements[idx];
     if (el) {
       el.classList.add('gw-focus');
       prevFocusEl = el;
     }
   }
-
-  pagePrevBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    goToPage(currentPage - 1);
-  });
-
-  pageNextBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    goToPage(currentPage + 1);
-  });
 
   // --- RSVP mode ---
 
@@ -311,14 +274,11 @@ export function mountReader(
     if (state.mode === 'rsvp') {
       rsvpWordEl.style.display = '';
       gradientEl.style.display = 'none';
-      pageNav.style.display = 'none';
       if (scrollRaf) { cancelAnimationFrame(scrollRaf); scrollRaf = null; }
     } else {
       rsvpWordEl.style.display = 'none';
       gradientEl.style.display = '';
-      pageNav.style.display = '';
-      totalPages = Math.ceil(state.words.length / WORDS_PER_PAGE);
-      buildPage(getPageForPosition(state.position));
+      buildWindow(state.position);
       if (!scrollRaf) scrollRaf = requestAnimationFrame(scrollLoop);
     }
     modeBtn.textContent = state.mode === 'rsvp' ? 'RSVP' : 'Page';
@@ -427,24 +387,16 @@ export function mountReader(
   function skipBack(): void {
     const wasPlaying = state.playing;
     if (wasPlaying) pause();
-    if (state.mode === 'gradient') {
-      goToPage(currentPage - 1);
-    } else {
-      state.position = findSentenceStart(state.words, state.position);
-      renderWord();
-    }
+    state.position = findSentenceStart(state.words, state.position);
+    renderWord();
     if (wasPlaying) play();
   }
 
   function skipForward(): void {
     const wasPlaying = state.playing;
     if (wasPlaying) pause();
-    if (state.mode === 'gradient') {
-      goToPage(currentPage + 1);
-    } else {
-      state.position = findNextSentenceStart(state.words, state.position);
-      renderWord();
-    }
+    state.position = findNextSentenceStart(state.words, state.position);
+    renderWord();
     if (wasPlaying) play();
   }
 
@@ -512,6 +464,8 @@ export function mountReader(
   display.addEventListener('click', () => {
     state.playing ? pause() : play();
   });
+
+  gradientEl.addEventListener('scroll', onManualScroll);
 
   document.addEventListener('keydown', handleKey);
 
