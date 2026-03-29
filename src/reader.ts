@@ -134,8 +134,18 @@ export function mountReader(
   function getTargetScroll(): number {
     const totalScroll = gradientEl.scrollHeight - gradientEl.clientHeight;
     if (totalScroll <= 0 || state.words.length <= 1) return 0;
+
+    // Proportional: smooth uniform motion
     const fraction = state.position / (state.words.length - 1);
-    return fraction * totalScroll;
+    const proportional = fraction * totalScroll;
+
+    // Element-based: actual centering
+    const el = gradientEl.querySelector(`[data-idx="${state.position}"]`) as HTMLElement | null;
+    if (!el) return proportional;
+    const centered = (el.offsetTop - gradientEl.offsetTop) - gradientEl.clientHeight * 0.45;
+
+    // Blend: 30% proportional (smooth) + 70% centered (accurate)
+    return proportional * 0.3 + centered * 0.7;
   }
 
   function scrollLoop(): void {
