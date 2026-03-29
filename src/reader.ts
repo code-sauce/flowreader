@@ -48,15 +48,20 @@ export function adjustWpm(current: number, direction: 'up' | 'down'): number {
 
 // Find the start of the previous sentence
 function findPrevSentenceStart(words: string[], from: number): number {
-  // Skip back past current sentence start to find the one before
-  let i = from - 1;
-  // If we're at a sentence boundary, skip past it
-  if (i >= 0) {
+  // First, find the start of the current sentence
+  let currentStart = 0;
+  for (let i = from - 1; i >= 0; i--) {
     const last = words[i][words[i].length - 1];
-    if (last === '.' || last === '?' || last === '!') i--;
+    if (last === '.' || last === '?' || last === '!') {
+      currentStart = i + 1;
+      break;
+    }
   }
-  // Find the end of the sentence before that
-  for (; i >= 0; i--) {
+  // If we're more than 3 words into the current sentence, go to its start
+  if (from - currentStart > 3) return currentStart;
+  // Otherwise go to the sentence before that
+  if (currentStart === 0) return 0;
+  for (let i = currentStart - 2; i >= 0; i--) {
     const last = words[i][words[i].length - 1];
     if (last === '.' || last === '?' || last === '!') return i + 1;
   }
