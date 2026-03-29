@@ -141,11 +141,13 @@ export function mountReader(
 
   // --- Page mode (static paragraph, moving highlight) ---
 
-  let pageBuilt = false;
   let prevFocusEl: HTMLElement | null = null;
   let scrollRaf: number | null = null;
-  let wordElements: HTMLElement[] = [];
-  let currentScrollTarget = 0;
+  let wordElements: Map<number, HTMLElement> = new Map();
+  let windowStart = 0;
+  let windowEnd = 0;
+  const WINDOW_SIZE = 200;
+  const WINDOW_MARGIN = 50; // rebuild when within this many words of edge
 
   function scrollLoop(): void {
     if (gradientEl.offsetParent === null) {
@@ -153,58 +155,57 @@ export function mountReader(
       return;
     }
 
-    const diff = currentScrollTarget - gradientEl.scrollTop;
-    if (Math.abs(diff) > 0.3) {
-      gradientEl.scrollTop += diff * 0.04;
+    // Keep focused word near vertical center
+    const focusEl = wordElements.get(state.position);
+    if (focusEl) {
+      const containerRect = gradientEl.getBoundingClientRect();
+      const elRect = focusEl.getBoundingClientRect();
+      const centerY = containerRect.top + containerRect.height * 0.45;
+      const diff = elRect.top - centerY;
+      if (Math.abs(diff) > 0.5) {
+        gradientEl.scrollTop += diff * 0.04;
+      }
     }
 
     scrollRaf = requestAnimationFrame(scrollLoop);
   }
 
-  function buildPage(): void {
+  function buildWindow(): void {
+    windowStart = Math.max(0, state.position - Math.floor(WINDOW_SIZE / 2));
+    windowEnd = Math.min(state.words.length, windowStart + WINDOW_SIZE);
+
     const frag = document.createDocumentFragment();
-    wordElements = [];
-    for (let i = 0; i < state.words.length; i++) {
-      if (i > 0) frag.appendChild(document.createTextNode(' '));
+    wordElements = new Map();
+    for (let i = windowStart; i < windowEnd; i++) {
+      if (i > windowStart) frag.appendChild(document.createTextNode(' '));
       const span = document.createElement('span');
       span.className = 'gw';
       span.textContent = state.words[i];
-      wordElements.push(span);
+      wordElements.set(i, span);
       frag.appendChild(span);
     }
     gradientEl.innerHTML = '';
     gradientEl.appendChild(frag);
     prevFocusEl = null;
-    pageBuilt = true;
-  }
-
-  function updateScrollTarget(): void {
-    const totalScroll = gradientEl.scrollHeight - gradientEl.clientHeight;
-    if (totalScroll <= 0 || state.words.length <= 1) { currentScrollTarget = 0; return; }
-
-    const fraction = state.position / (state.words.length - 1);
-    const proportional = fraction * totalScroll;
-
-    const el = wordElements[state.position];
-    if (!el) { currentScrollTarget = proportional; return; }
-    const centered = el.offsetTop - gradientEl.offsetTop - gradientEl.clientHeight * 0.45;
-
-    currentScrollTarget = proportional * 0.3 + centered * 0.7;
   }
 
   function renderGradient(): void {
-    if (!pageBuilt) buildPage();
+    // Rebuild window if position is near the edge
+    if (wordElements.size === 0 ||
+        state.position < windowStart + WINDOW_MARGIN ||
+        state.position > windowEnd - WINDOW_MARGIN) {
+      buildWindow();
+    }
 
     if (prevFocusEl) {
       prevFocusEl.classList.remove('gw-focus');
       prevFocusEl.classList.remove('gw-paused');
     }
 
-    const el = wordElements[state.position];
+    const el = wordElements.get(state.position);
     if (el) {
       el.classList.add('gw-focus');
       prevFocusEl = el;
-      updateScrollTarget();
     }
   }
 
@@ -228,7 +229,7 @@ export function mountReader(
     } else {
       rsvpWordEl.style.display = 'none';
       gradientEl.style.display = '';
-      if (!pageBuilt) buildPage();
+      buildWindow();
       if (!scrollRaf) scrollRaf = requestAnimationFrame(scrollLoop);
     }
     modeBtn.textContent = state.mode === 'rsvp' ? 'RSVP' : 'Page';
