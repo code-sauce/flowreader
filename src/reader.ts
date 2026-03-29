@@ -148,6 +148,7 @@ export function mountReader(
 
   let prevFocusEl: HTMLElement | null = null;
   let wordElements: HTMLElement[] = [];
+  let scrollRaf: number | null = null;
   const WORDS_PER_PAGE = 150;
   let currentPage = 0;
   let totalPages = 1;
@@ -156,6 +157,24 @@ export function mountReader(
   const pageIndicator = container.querySelector('#page-indicator') as HTMLElement;
   const pagePrevBtn = container.querySelector('#page-prev') as HTMLElement;
   const pageNextBtn = container.querySelector('#page-next') as HTMLElement;
+
+  // Gentle auto-scroll to keep focused word near vertical center
+  function scrollLoop(): void {
+    if (gradientEl.offsetParent === null) {
+      scrollRaf = requestAnimationFrame(scrollLoop);
+      return;
+    }
+    if (prevFocusEl) {
+      const containerRect = gradientEl.getBoundingClientRect();
+      const elRect = prevFocusEl.getBoundingClientRect();
+      const centerY = containerRect.top + containerRect.height * 0.45;
+      const diff = elRect.top - centerY;
+      if (Math.abs(diff) > 0.5) {
+        gradientEl.scrollTop += diff * 0.06;
+      }
+    }
+    scrollRaf = requestAnimationFrame(scrollLoop);
+  }
 
   function getPageForPosition(pos: number): number {
     return Math.floor(pos / WORDS_PER_PAGE);
@@ -183,6 +202,7 @@ export function mountReader(
     }
     gradientEl.innerHTML = '';
     gradientEl.appendChild(frag);
+    gradientEl.scrollTop = 0;
     prevFocusEl = null;
 
     pageIndicator.textContent = `Page ${page + 1} of ${totalPages}`;
@@ -246,12 +266,14 @@ export function mountReader(
       rsvpWordEl.style.display = '';
       gradientEl.style.display = 'none';
       pageNav.style.display = 'none';
+      if (scrollRaf) { cancelAnimationFrame(scrollRaf); scrollRaf = null; }
     } else {
       rsvpWordEl.style.display = 'none';
       gradientEl.style.display = '';
       pageNav.style.display = '';
       totalPages = Math.ceil(state.words.length / WORDS_PER_PAGE);
       buildPage(getPageForPosition(state.position));
+      if (!scrollRaf) scrollRaf = requestAnimationFrame(scrollLoop);
     }
     modeBtn.textContent = state.mode === 'rsvp' ? 'RSVP' : 'Page';
   }
@@ -383,6 +405,7 @@ export function mountReader(
   function exit(): void {
     pause();
     savePosition();
+    if (scrollRaf) { cancelAnimationFrame(scrollRaf); scrollRaf = null; }
     window.dispatchEvent(new CustomEvent('navigate', { detail: 'home' }));
   }
 
