@@ -130,15 +130,19 @@ export function mountReader(
   let scrollRaf: number | null = null;
 
   // Continuous easing scroll loop -- always running in page mode
-  // Moves 8% of the remaining distance each frame = ~200ms ease
+  // Easing scales with offset: gentle for small drifts, faster for big jumps
   function scrollLoop(): void {
     if (scrollTarget && gradientEl.offsetParent !== null) {
       const containerRect = gradientEl.getBoundingClientRect();
       const elRect = scrollTarget.getBoundingClientRect();
       const centerY = containerRect.top + containerRect.height * 0.45;
       const offset = elRect.top - centerY;
-      if (Math.abs(offset) > 0.5) {
-        gradientEl.scrollTop += offset * 0.01;
+      const absOffset = Math.abs(offset);
+      if (absOffset > 0.5) {
+        // Larger offsets get a higher easing factor to prevent end-of-line jitter
+        // Range: 0.01 (tiny drift) to 0.06 (large line jump)
+        const ease = Math.min(0.06, 0.01 + absOffset * 0.001);
+        gradientEl.scrollTop += offset * ease;
       }
     }
     scrollRaf = requestAnimationFrame(scrollLoop);
