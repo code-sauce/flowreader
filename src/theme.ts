@@ -77,6 +77,7 @@ export function applyTheme(settings: ThemeSettings): void {
   for (const [key, value] of Object.entries(vars)) {
     root.style.setProperty(key, value);
   }
+  window.dispatchEvent(new CustomEvent('theme-changed', { detail: settings }));
 }
 
 export async function loadSettings(): Promise<ThemeSettings> {

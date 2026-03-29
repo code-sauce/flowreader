@@ -109,19 +109,19 @@ export function mountReader(
   const gradientEl = container.querySelector('.reader-gradient') as HTMLElement;
 
   // Apply focus style from settings
+  function applyFocusStyle(focusStyle?: FocusStyle): void {
+    gradientEl.dataset.focus = focusStyle || 'underline';
+  }
+
   storage.getSetting('themeSettings').then((saved: unknown) => {
     const s = saved as { focusStyle?: FocusStyle } | undefined;
-    gradientEl.dataset.focus = s?.focusStyle || 'underline';
+    applyFocusStyle(s?.focusStyle);
   });
 
-  // Watch for settings changes (theme module updates CSS vars, we update data attr)
-  const styleObserver = new MutationObserver(() => {
-    storage.getSetting('themeSettings').then((saved: unknown) => {
-      const s = saved as { focusStyle?: FocusStyle } | undefined;
-      gradientEl.dataset.focus = s?.focusStyle || 'underline';
-    });
-  });
-  styleObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+  // Listen for live settings changes
+  window.addEventListener('theme-changed', ((e: CustomEvent) => {
+    applyFocusStyle(e.detail?.focusStyle);
+  }) as EventListener);
 
   const wpmLabel = container.querySelector('#reader-wpm') as HTMLElement;
   const slider = container.querySelector('#reader-slider') as HTMLInputElement;
