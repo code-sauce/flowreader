@@ -46,9 +46,17 @@ export function adjustWpm(current: number, direction: 'up' | 'down'): number {
   return Math.min(1000, Math.max(100, next));
 }
 
-// Find the start of the current sentence (after last . ? !)
-function findSentenceStart(words: string[], from: number): number {
-  for (let i = from - 1; i >= 0; i--) {
+// Find the start of the previous sentence
+function findPrevSentenceStart(words: string[], from: number): number {
+  // Skip back past current sentence start to find the one before
+  let i = from - 1;
+  // If we're at a sentence boundary, skip past it
+  if (i >= 0) {
+    const last = words[i][words[i].length - 1];
+    if (last === '.' || last === '?' || last === '!') i--;
+  }
+  // Find the end of the sentence before that
+  for (; i >= 0; i--) {
     const last = words[i][words[i].length - 1];
     if (last === '.' || last === '?' || last === '!') return i + 1;
   }
@@ -417,7 +425,7 @@ export function mountReader(
 
   function skipBack(): void {
     if (state.playing) pause();
-    state.position = findSentenceStart(state.words, state.position);
+    state.position = findPrevSentenceStart(state.words, state.position);
     renderWord();
   }
 
