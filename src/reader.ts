@@ -143,6 +143,7 @@ export function mountReader(
 
   let prevFocusEl: HTMLElement | null = null;
   let prevLineEls: HTMLElement[] = [];
+  let prevNearEls: HTMLElement[] = [];
   let wordElements: HTMLElement[] = [];
   let scrollRaf: number | null = null;
   let renderedStart = 0;
@@ -246,10 +247,9 @@ export function mountReader(
       buildWindow(state.position);
     }
 
-    // Remove previous line highlight
-    for (const prev of prevLineEls) {
-      prev.classList.remove('gw-line');
-    }
+    // Remove previous highlights
+    for (const prev of prevLineEls) prev.classList.remove('gw-line');
+    for (const prev of prevNearEls) prev.classList.remove('gw-near');
     if (prevFocusEl) {
       prevFocusEl.classList.remove('gw-focus');
       prevFocusEl.classList.remove('gw-paused');
@@ -258,16 +258,28 @@ export function mountReader(
     const idx = state.position - renderedStart;
     const el = wordElements[idx];
     if (el) {
-      // Highlight all words on the same line
       const lineTop = el.offsetTop;
+
+      // Collect unique line tops to find nearby lines
+      const lineTops = [...new Set(wordElements.map(w => w.offsetTop))].sort((a, b) => a - b);
+      const currentLineIdx = lineTops.findIndex(t => Math.abs(t - lineTop) < 2);
+
       prevLineEls = [];
+      prevNearEls = [];
+
       for (const w of wordElements) {
-        if (Math.abs(w.offsetTop - lineTop) < 2) {
+        const wLineIdx = lineTops.findIndex(t => Math.abs(t - w.offsetTop) < 2);
+        const dist = Math.abs(wLineIdx - currentLineIdx);
+
+        if (dist === 0) {
           w.classList.add('gw-line');
           prevLineEls.push(w);
+        } else if (!state.playing && dist <= 3) {
+          w.classList.add('gw-near');
+          prevNearEls.push(w);
         }
       }
-      // Mark the active word specifically
+
       el.classList.add('gw-focus');
       prevFocusEl = el;
     }

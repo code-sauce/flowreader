@@ -453,6 +453,11 @@ html, body {
   color: var(--text-bright);
 }
 
+/* Nearby lines: visible when paused for context */
+.gw-near {
+  color: var(--text);
+}
+
 /* Focus styles: underline (on the active word within the line) */
 .reader-gradient[data-focus="underline"] .gw-focus {
   text-decoration: underline;
@@ -496,6 +501,10 @@ html, body {
 
 .reader-gradient[data-focus="blur"] .gw-line {
   filter: none;
+}
+
+.reader-gradient[data-focus="blur"] .gw-near {
+  filter: blur(0.8px);
 }
 
 .reader-gradient[data-focus="blur"] .gw-focus {
