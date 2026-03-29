@@ -431,15 +431,47 @@ html, body {
   text-align: center;
   max-width: var(--reader-max-width);
   width: 100%;
-  padding: 45vh 32px;
-  overflow-y: auto;
-  height: 100%;
-  scrollbar-width: none;
+  padding: 40px 32px;
   word-spacing: 0.12em;
 }
 
-.reader-gradient::-webkit-scrollbar {
-  display: none;
+/* Page navigation */
+
+#reader-page-nav {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 10;
+}
+
+.page-nav-btn {
+  background: var(--bg-surface);
+  border: 1px solid #333;
+  color: var(--text);
+  font-size: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s;
+}
+
+.page-nav-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-bright);
+}
+
+.page-indicator {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text);
 }
 
 .gw {
