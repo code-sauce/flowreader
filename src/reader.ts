@@ -236,11 +236,15 @@ export function mountReader(
     gradientEl.appendChild(frag);
     prevFocusEl = null;
 
-    // Snap scroll so the current word stays at ~45% from top
+    // Snap scroll so the current word is visible
     const focusIdx = state.position - renderedStart;
     const focusEl = wordElements[focusIdx];
     if (focusEl) {
-      gradientEl.scrollTop = focusEl.offsetTop - gradientEl.offsetTop - gradientEl.clientHeight * 0.45;
+      const elTop = focusEl.offsetTop - gradientEl.offsetTop;
+      // If word is in the top half of the content, start from top (no blank space)
+      // Otherwise center it
+      const centered = elTop - gradientEl.clientHeight * 0.45;
+      gradientEl.scrollTop = Math.max(0, centered);
     }
 
     pageIndicator.textContent = `Page ${page + 1} of ${totalPages}`;
