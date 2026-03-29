@@ -149,13 +149,15 @@ export function mountReader(
   const WINDOW_SIZE = 400;
   const WINDOW_MARGIN = 100;
 
+  let userScrolling = false;
+
   function scrollLoop(): void {
-    if (gradientEl.offsetParent === null) {
+    if (gradientEl.offsetParent === null || !state.playing || userScrolling) {
       scrollRaf = requestAnimationFrame(scrollLoop);
       return;
     }
 
-    // Keep focused word near 45% from top
+    // Keep focused word near 45% from top (only while playing)
     const el = prevFocusEl;
     if (el) {
       const elTop = el.offsetTop - gradientEl.offsetTop;
@@ -167,6 +169,21 @@ export function mountReader(
     }
 
     scrollRaf = requestAnimationFrame(scrollLoop);
+  }
+
+  // When user manually scrolls while paused, find nearest word to center
+  function findWordNearCenter(): number {
+    const centerY = gradientEl.scrollTop + gradientEl.clientHeight * 0.45;
+    let closest = state.position;
+    let closestDist = Infinity;
+    for (const [idx, el] of wordElements) {
+      const dist = Math.abs((el.offsetTop - gradientEl.offsetTop) - centerY);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closest = idx;
+      }
+    }
+    return closest;
   }
 
   function buildWindow(): void {
@@ -346,10 +363,25 @@ export function mountReader(
     showToast('⏸');
   }
 
+  // Estimate words per visible page based on current window
+  function wordsPerPage(): number {
+    if (state.mode !== 'gradient' || wordElements.size === 0) return 1;
+    const containerHeight = gradientEl.clientHeight;
+    const contentHeight = gradientEl.scrollHeight;
+    if (contentHeight <= 0) return 50;
+    const ratio = containerHeight / contentHeight;
+    return Math.max(10, Math.round(ratio * wordElements.size));
+  }
+
   function skipBack(): void {
     const wasPlaying = state.playing;
     if (wasPlaying) pause();
-    state.position = findSentenceStart(state.words, state.position);
+    if (state.mode === 'gradient' && !wasPlaying) {
+      // Page jump when paused in page mode
+      state.position = Math.max(0, state.position - wordsPerPage());
+    } else {
+      state.position = findSentenceStart(state.words, state.position);
+    }
     renderWord();
     if (wasPlaying) play();
   }
@@ -357,7 +389,11 @@ export function mountReader(
   function skipForward(): void {
     const wasPlaying = state.playing;
     if (wasPlaying) pause();
-    state.position = findNextSentenceStart(state.words, state.position);
+    if (state.mode === 'gradient' && !wasPlaying) {
+      state.position = Math.min(state.words.length - 1, state.position + wordsPerPage());
+    } else {
+      state.position = findNextSentenceStart(state.words, state.position);
+    }
     renderWord();
     if (wasPlaying) play();
   }
@@ -425,6 +461,30 @@ export function mountReader(
   const display = container.querySelector('#reader-display') as HTMLElement;
   display.addEventListener('click', () => {
     state.playing ? pause() : play();
+  });
+
+  // Manual scroll in page mode: update reading position to match scroll
+  let scrollDebounce: ReturnType<typeof setTimeout> | null = null;
+  gradientEl.addEventListener('scroll', () => {
+    if (state.playing || state.mode !== 'gradient') return;
+    userScrolling = true;
+    if (scrollDebounce) clearTimeout(scrollDebounce);
+    scrollDebounce = setTimeout(() => {
+      const newPos = findWordNearCenter();
+      if (newPos !== state.position) {
+        state.position = newPos;
+        renderGradient();
+        savePosition();
+      }
+      userScrolling = false;
+    }, 150);
+  });
+
+  // Allow mouse wheel on gradient when paused
+  gradientEl.addEventListener('wheel', (e) => {
+    if (state.mode === 'gradient' && !state.playing) {
+      e.stopPropagation();
+    }
   });
 
   document.addEventListener('keydown', handleKey);
