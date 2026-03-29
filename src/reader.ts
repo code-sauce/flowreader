@@ -319,7 +319,7 @@ export function mountReader(
     pause();
     savePosition();
     if (scrollRaf) { cancelAnimationFrame(scrollRaf); scrollRaf = null; }
-    container.dispatchEvent(new CustomEvent('navigate', { detail: 'home', bubbles: true }));
+    window.dispatchEvent(new CustomEvent('navigate', { detail: 'home' }));
   }
 
   function handleKey(e: KeyboardEvent): void {
