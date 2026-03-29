@@ -127,38 +127,28 @@ export function mountReader(
   let pageBuilt = false;
   let prevFocusEl: HTMLElement | null = null;
   let scrollRaf: number | null = null;
-  let pxPerMs = 0; // constant scroll velocity
-  let lastFrameTime = 0;
 
-  // Calculate constant scroll speed: total scroll distance / total reading time
-  function calcScrollSpeed(): void {
-    if (!pageBuilt) return;
-    const totalScrollHeight = gradientEl.scrollHeight - gradientEl.clientHeight;
-    if (totalScrollHeight <= 0) { pxPerMs = 0; return; }
-    // Estimate total reading time from WPM
-    const msPerWord = 60_000 / state.wpm;
-    const totalMs = state.words.length * msPerWord;
-    pxPerMs = totalScrollHeight / totalMs;
+  // Proportional scroll: map (words read / total words) to (scroll position / total scroll).
+  // Every word advances the target uniformly, even within the same line.
+  // The animation loop eases smoothly toward that target.
+  function getTargetScroll(): number {
+    const totalScroll = gradientEl.scrollHeight - gradientEl.clientHeight;
+    if (totalScroll <= 0 || state.words.length <= 1) return 0;
+    const fraction = state.position / (state.words.length - 1);
+    return fraction * totalScroll;
   }
 
-  function scrollLoop(now: number): void {
-    if (gradientEl.offsetParent === null || !state.playing) {
-      lastFrameTime = 0;
+  function scrollLoop(): void {
+    if (gradientEl.offsetParent === null) {
       scrollRaf = requestAnimationFrame(scrollLoop);
       return;
     }
 
-    if (lastFrameTime === 0) {
-      lastFrameTime = now;
-      scrollRaf = requestAnimationFrame(scrollLoop);
-      return;
-    }
-
-    const dt = now - lastFrameTime;
-    lastFrameTime = now;
-
-    if (pxPerMs > 0) {
-      gradientEl.scrollTop += pxPerMs * dt;
+    const target = getTargetScroll();
+    const diff = target - gradientEl.scrollTop;
+    // Ease 4% per frame -- smooth and continuous since target moves every word
+    if (Math.abs(diff) > 0.3) {
+      gradientEl.scrollTop += diff * 0.04;
     }
 
     scrollRaf = requestAnimationFrame(scrollLoop);
@@ -173,8 +163,6 @@ export function mountReader(
     gradientEl.innerHTML = parts.join(' ');
     prevFocusEl = null;
     pageBuilt = true;
-    // Need a frame for layout to settle before measuring
-    requestAnimationFrame(() => calcScrollSpeed());
   }
 
   function renderGradient(): void {
@@ -214,7 +202,7 @@ export function mountReader(
       rsvpWordEl.style.display = 'none';
       gradientEl.style.display = '';
       if (!pageBuilt) buildPage();
-      if (!scrollRaf) { lastFrameTime = 0; scrollRaf = requestAnimationFrame(scrollLoop); }
+      if (!scrollRaf) scrollRaf = requestAnimationFrame(scrollLoop);
     }
     modeBtn.textContent = state.mode === 'rsvp' ? 'RSVP' : 'Page';
   }
@@ -273,7 +261,6 @@ export function mountReader(
     wpmLabel.textContent = `${state.wpm} WPM`;
     slider.value = String(state.wpm);
     showToast(`${state.wpm} WPM`);
-    calcScrollSpeed();
   }
 
   function step(): void {
