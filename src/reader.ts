@@ -154,14 +154,14 @@ export function mountReader(
     if (nextEl) {
       const nextRect = nextEl.getBoundingClientRect();
       if (Math.abs(nextRect.top - currentRect.top) > 5) {
-        // Next word is on a new line -- bias the scroll target 40% toward it
-        targetY = currentRect.top + (nextRect.top - currentRect.top) * 0.4;
+        // Next word is on a new line -- bias the scroll target 60% toward it
+        targetY = currentRect.top + (nextRect.top - currentRect.top) * 0.6;
       }
     }
 
     const offset = targetY - centerY;
     if (Math.abs(offset) > 0.5) {
-      gradientEl.scrollTop += offset * 0.02;
+      gradientEl.scrollTop += offset * 0.03;
     }
 
     scrollRaf = requestAnimationFrame(scrollLoop);
