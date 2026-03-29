@@ -431,7 +431,7 @@ html, body {
   text-align: center;
   max-width: var(--reader-max-width);
   width: 100%;
-  padding: 40px 32px;
+  padding: 45vh 32px;
   overflow-y: auto;
   height: 100%;
   scrollbar-width: none;
