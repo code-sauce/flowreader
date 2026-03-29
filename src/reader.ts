@@ -428,10 +428,17 @@ export function mountReader(
     showToast('⏸');
   }
 
+  function scrollToFocus(): void {
+    if (state.mode !== 'gradient' || !prevFocusEl) return;
+    const elTop = prevFocusEl.offsetTop - gradientEl.offsetTop;
+    gradientEl.scrollTop = Math.max(0, elTop - gradientEl.clientHeight * 0.45);
+  }
+
   function skipBack(): void {
     if (state.playing) pause();
     state.position = findPrevSentenceStart(state.words, state.position);
     renderWord();
+    scrollToFocus();
   }
 
   function skipForward(): void {
@@ -439,7 +446,11 @@ export function mountReader(
     if (wasPlaying) pause();
     state.position = findNextSentenceStart(state.words, state.position);
     renderWord();
-    if (wasPlaying) play();
+    if (wasPlaying) {
+      play();
+    } else {
+      scrollToFocus();
+    }
   }
 
   function exit(): void {
