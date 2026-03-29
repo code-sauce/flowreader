@@ -127,58 +127,38 @@ export function mountReader(
   let pageBuilt = false;
   let prevFocusEl: HTMLElement | null = null;
   let scrollRaf: number | null = null;
+  let pxPerMs = 0; // constant scroll velocity
+  let lastFrameTime = 0;
 
-  // Analog scroll: linearly interpolate scroll position between words
-  // so the page drifts at a constant velocity -- no discrete jumps.
-  let scrollFromY = 0;  // scroll position when current word started
-  let scrollToY = 0;    // scroll position we want when next word starts
-  let wordStartTime = 0;
-  let wordDuration = 300; // ms until next word, updated each step
-
-  function updateScrollTargets(): void {
-    const containerRect = gradientEl.getBoundingClientRect();
-    const centerY = containerRect.height * 0.45;
-
-    // Current word position
-    const curEl = gradientEl.querySelector(`[data-idx="${state.position}"]`) as HTMLElement | null;
-    if (!curEl) return;
-    const curTop = curEl.offsetTop - gradientEl.offsetTop;
-    scrollFromY = curTop - centerY;
-
-    // Next word position (where we want to be by the time it becomes active)
-    const nextIdx = state.position + 1;
-    const nextEl = nextIdx < state.words.length
-      ? gradientEl.querySelector(`[data-idx="${nextIdx}"]`) as HTMLElement | null
-      : null;
-    if (nextEl) {
-      const nextTop = nextEl.offsetTop - gradientEl.offsetTop;
-      scrollToY = nextTop - centerY;
-    } else {
-      scrollToY = scrollFromY;
-    }
-
-    wordStartTime = performance.now();
-    // Calculate actual delay for this word
-    const word = state.words[state.position] ?? '';
-    const nextWord = state.words[state.position + 1] ?? '';
-    wordDuration = calculateDelay(word, nextWord, state.wpm);
+  // Calculate constant scroll speed: total scroll distance / total reading time
+  function calcScrollSpeed(): void {
+    if (!pageBuilt) return;
+    const totalScrollHeight = gradientEl.scrollHeight - gradientEl.clientHeight;
+    if (totalScrollHeight <= 0) { pxPerMs = 0; return; }
+    // Estimate total reading time from WPM
+    const msPerWord = 60_000 / state.wpm;
+    const totalMs = state.words.length * msPerWord;
+    pxPerMs = totalScrollHeight / totalMs;
   }
 
-  function scrollLoop(): void {
-    if (gradientEl.offsetParent === null) {
+  function scrollLoop(now: number): void {
+    if (gradientEl.offsetParent === null || !state.playing) {
+      lastFrameTime = 0;
       scrollRaf = requestAnimationFrame(scrollLoop);
       return;
     }
 
-    const elapsed = performance.now() - wordStartTime;
-    // Linear interpolation: 0 at word start, 1 at word end
-    const t = Math.min(1, elapsed / Math.max(wordDuration, 1));
-    const targetScroll = scrollFromY + (scrollToY - scrollFromY) * t;
+    if (lastFrameTime === 0) {
+      lastFrameTime = now;
+      scrollRaf = requestAnimationFrame(scrollLoop);
+      return;
+    }
 
-    // Ease toward target to avoid micro-jitter
-    const diff = targetScroll - gradientEl.scrollTop;
-    if (Math.abs(diff) > 0.3) {
-      gradientEl.scrollTop += diff * 0.15;
+    const dt = now - lastFrameTime;
+    lastFrameTime = now;
+
+    if (pxPerMs > 0) {
+      gradientEl.scrollTop += pxPerMs * dt;
     }
 
     scrollRaf = requestAnimationFrame(scrollLoop);
@@ -193,6 +173,8 @@ export function mountReader(
     gradientEl.innerHTML = parts.join(' ');
     prevFocusEl = null;
     pageBuilt = true;
+    // Need a frame for layout to settle before measuring
+    requestAnimationFrame(() => calcScrollSpeed());
   }
 
   function renderGradient(): void {
@@ -208,8 +190,6 @@ export function mountReader(
     if (el) {
       el.classList.add('gw-focus');
       prevFocusEl = el;
-
-      updateScrollTargets();
     }
   }
 
@@ -234,7 +214,7 @@ export function mountReader(
       rsvpWordEl.style.display = 'none';
       gradientEl.style.display = '';
       if (!pageBuilt) buildPage();
-      if (!scrollRaf) scrollLoop();
+      if (!scrollRaf) { lastFrameTime = 0; scrollRaf = requestAnimationFrame(scrollLoop); }
     }
     modeBtn.textContent = state.mode === 'rsvp' ? 'RSVP' : 'Page';
   }
@@ -293,6 +273,7 @@ export function mountReader(
     wpmLabel.textContent = `${state.wpm} WPM`;
     slider.value = String(state.wpm);
     showToast(`${state.wpm} WPM`);
+    calcScrollSpeed();
   }
 
   function step(): void {
