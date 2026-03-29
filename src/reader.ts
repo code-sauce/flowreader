@@ -400,11 +400,9 @@ export function mountReader(
   }
 
   function skipBack(): void {
-    const wasPlaying = state.playing;
-    if (wasPlaying) pause();
+    if (state.playing) pause();
     state.position = findSentenceStart(state.words, state.position);
     renderWord();
-    if (wasPlaying) play();
   }
 
   function skipForward(): void {
