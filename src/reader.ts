@@ -236,6 +236,13 @@ export function mountReader(
     gradientEl.appendChild(frag);
     prevFocusEl = null;
 
+    // Snap scroll so the current word stays at ~45% from top
+    const focusIdx = state.position - renderedStart;
+    const focusEl = wordElements[focusIdx];
+    if (focusEl) {
+      gradientEl.scrollTop = focusEl.offsetTop - gradientEl.offsetTop - gradientEl.clientHeight * 0.45;
+    }
+
     pageIndicator.textContent = `Page ${page + 1} of ${totalPages}`;
   }
 
