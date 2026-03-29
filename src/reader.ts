@@ -1,5 +1,6 @@
 import { getOrpIndex } from './orp';
 import { storage } from './storage';
+import { FocusStyle } from './theme';
 
 export type ReadingMode = 'rsvp' | 'gradient';
 
@@ -106,6 +107,22 @@ export function mountReader(
   const afterEl = container.querySelector('.reader-after') as HTMLElement;
   const rsvpWordEl = container.querySelector('.reader-word') as HTMLElement;
   const gradientEl = container.querySelector('.reader-gradient') as HTMLElement;
+
+  // Apply focus style from settings
+  storage.getSetting('themeSettings').then((saved: unknown) => {
+    const s = saved as { focusStyle?: FocusStyle } | undefined;
+    gradientEl.dataset.focus = s?.focusStyle || 'underline';
+  });
+
+  // Watch for settings changes (theme module updates CSS vars, we update data attr)
+  const styleObserver = new MutationObserver(() => {
+    storage.getSetting('themeSettings').then((saved: unknown) => {
+      const s = saved as { focusStyle?: FocusStyle } | undefined;
+      gradientEl.dataset.focus = s?.focusStyle || 'underline';
+    });
+  });
+  styleObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+
   const wpmLabel = container.querySelector('#reader-wpm') as HTMLElement;
   const slider = container.querySelector('#reader-slider') as HTMLInputElement;
   const controls = container.querySelector('#reader-controls') as HTMLElement;

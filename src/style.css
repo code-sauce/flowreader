@@ -20,6 +20,7 @@
   --reader-line-height: 2.2;
   --reader-letter-spacing: 0px;
   --reader-max-width: 680px;
+  --focus-color: #e74c3c;
 }
 
 html, body {
@@ -297,9 +298,47 @@ html, body {
 }
 
 .theme-btn.active,
-.font-btn.active {
+.font-btn.active,
+.focus-btn.active {
   border-color: var(--accent);
   color: var(--text-bright);
+}
+
+.focus-btn {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 12px;
+  background: var(--bg);
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.focus-btn:hover {
+  border-color: var(--text);
+}
+
+.color-row {
+  gap: 8px;
+}
+
+.color-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+.color-dot:hover {
+  transform: scale(1.15);
+}
+
+.color-dot.active {
+  border-color: var(--text-bright);
 }
 
 .setting-slider {
@@ -350,7 +389,7 @@ html, body {
 }
 
 .reader-orp {
-  color: var(--accent);
+  color: var(--focus-color);
   font-weight: bold;
 }
 
@@ -407,20 +446,54 @@ html, body {
   color: var(--text);
 }
 
-.gw-focus {
+/* Focus styles: underline */
+.reader-gradient[data-focus="underline"] .gw-focus {
   text-decoration: underline;
-  text-decoration-color: var(--accent);
+  text-decoration-color: var(--focus-color);
   text-underline-offset: 4px;
   text-decoration-thickness: 2px;
 }
 
-.gw-paused {
+.reader-gradient[data-focus="underline"] .gw-paused {
   animation: pulse-underline 2s ease-in-out infinite;
 }
 
 @keyframes pulse-underline {
-  0%, 100% { text-decoration-color: var(--accent); }
+  0%, 100% { text-decoration-color: var(--focus-color); }
   50% { text-decoration-color: transparent; }
+}
+
+/* Focus styles: highlight */
+.reader-gradient[data-focus="highlight"] .gw-focus {
+  background: var(--focus-color);
+  color: #fff;
+  border-radius: 2px;
+  padding: 0 2px;
+  margin: 0 -2px;
+}
+
+.reader-gradient[data-focus="highlight"] .gw-paused {
+  animation: pulse-highlight 2s ease-in-out infinite;
+}
+
+@keyframes pulse-highlight {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Focus styles: blur (all words blurred except focused) */
+.reader-gradient[data-focus="blur"] .gw {
+  filter: blur(3px);
+  transition: filter 0.15s ease;
+}
+
+.reader-gradient[data-focus="blur"] .gw-focus {
+  filter: none;
+  color: var(--text-bright);
+}
+
+.reader-gradient[data-focus="blur"] .gw-paused {
+  animation: pulse 2s ease-in-out infinite;
 }
 
 /* Controls */

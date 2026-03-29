@@ -3,6 +3,9 @@ import { storage } from './storage';
 export type ThemeName = 'dark' | 'sepia' | 'light';
 export type FontFamily = 'mono' | 'sans' | 'serif';
 
+export type FocusStyle = 'underline' | 'highlight' | 'blur';
+export type FocusColor = string;
+
 export interface ThemeSettings {
   theme: ThemeName;
   fontFamily: FontFamily;
@@ -10,6 +13,8 @@ export interface ThemeSettings {
   lineHeight: number;
   letterSpacing: number;
   pageWidth: number;
+  focusStyle: FocusStyle;
+  focusColor: FocusColor;
 }
 
 export const DEFAULT_SETTINGS: ThemeSettings = {
@@ -19,6 +24,8 @@ export const DEFAULT_SETTINGS: ThemeSettings = {
   lineHeight: 2.2,
   letterSpacing: 0,
   pageWidth: 680,
+  focusStyle: 'underline',
+  focusColor: '#e74c3c',
 };
 
 const THEME_COLORS: Record<ThemeName, Record<string, string>> = {
@@ -60,6 +67,7 @@ export function getThemeVars(settings: ThemeSettings): Record<string, string> {
     '--reader-line-height': `${settings.lineHeight}`,
     '--reader-letter-spacing': `${settings.letterSpacing}px`,
     '--reader-max-width': `${settings.pageWidth}px`,
+    '--focus-color': settings.focusColor,
   };
 }
 

@@ -1,5 +1,5 @@
 import { storage, Article } from './storage';
-import { ThemeSettings, ThemeName, FontFamily, saveSettings } from './theme';
+import { ThemeSettings, ThemeName, FontFamily, FocusStyle, saveSettings } from './theme';
 
 function formatDate(ts: number): string {
   return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -36,6 +36,17 @@ function renderSettings(settings: ThemeSettings): string {
     return `<button class="font-btn ${active}" data-font="${name}">${label}</button>`;
   }
 
+  function focusBtn(name: FocusStyle, label: string): string {
+    const active = settings.focusStyle === name ? 'active' : '';
+    return `<button class="focus-btn ${active}" data-focus="${name}">${label}</button>`;
+  }
+
+  const FOCUS_COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'];
+  function colorDot(color: string): string {
+    const active = settings.focusColor === color ? 'active' : '';
+    return `<button class="color-dot ${active}" data-color="${color}" style="background:${color}"></button>`;
+  }
+
   return `
     <div class="sidebar-settings">
       <button class="sidebar-accordion-toggle" id="settings-toggle">
@@ -56,6 +67,20 @@ function renderSettings(settings: ThemeSettings): string {
             ${fontBtn('mono', 'Mono')}
             ${fontBtn('sans', 'Sans')}
             ${fontBtn('serif', 'Serif')}
+          </div>
+        </div>
+        <div class="setting-group">
+          <div class="setting-label">Focus style</div>
+          <div class="setting-row">
+            ${focusBtn('underline', 'Underline')}
+            ${focusBtn('highlight', 'Highlight')}
+            ${focusBtn('blur', 'Blur')}
+          </div>
+        </div>
+        <div class="setting-group">
+          <div class="setting-label">Focus color</div>
+          <div class="setting-row color-row">
+            ${FOCUS_COLORS.map(c => colorDot(c)).join('')}
           </div>
         </div>
         <div class="setting-group">
@@ -148,6 +173,28 @@ export async function mountSidebar(
     btn.addEventListener('click', () => {
       currentSettings.fontFamily = (btn as HTMLElement).dataset.font as FontFamily;
       container.querySelectorAll('.font-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      saveSettings(currentSettings);
+      onSettingsChange(currentSettings);
+    });
+  });
+
+  // Focus style buttons
+  container.querySelectorAll('.focus-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentSettings.focusStyle = (btn as HTMLElement).dataset.focus as FocusStyle;
+      container.querySelectorAll('.focus-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      saveSettings(currentSettings);
+      onSettingsChange(currentSettings);
+    });
+  });
+
+  // Focus color dots
+  container.querySelectorAll('.color-dot').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentSettings.focusColor = (btn as HTMLElement).dataset.color!;
+      container.querySelectorAll('.color-dot').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       saveSettings(currentSettings);
       onSettingsChange(currentSettings);
