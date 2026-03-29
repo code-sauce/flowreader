@@ -142,6 +142,7 @@ export function mountReader(
   // --- Page mode (infinite scroll, centered underline) ---
 
   let prevFocusEl: HTMLElement | null = null;
+  let prevLineEls: HTMLElement[] = [];
   let wordElements: HTMLElement[] = [];
   let scrollRaf: number | null = null;
   let renderedStart = 0;
@@ -245,6 +246,10 @@ export function mountReader(
       buildWindow(state.position);
     }
 
+    // Remove previous line highlight
+    for (const prev of prevLineEls) {
+      prev.classList.remove('gw-line');
+    }
     if (prevFocusEl) {
       prevFocusEl.classList.remove('gw-focus');
       prevFocusEl.classList.remove('gw-paused');
@@ -253,6 +258,16 @@ export function mountReader(
     const idx = state.position - renderedStart;
     const el = wordElements[idx];
     if (el) {
+      // Highlight all words on the same line
+      const lineTop = el.offsetTop;
+      prevLineEls = [];
+      for (const w of wordElements) {
+        if (Math.abs(w.offsetTop - lineTop) < 2) {
+          w.classList.add('gw-line');
+          prevLineEls.push(w);
+        }
+      }
+      // Mark the active word specifically
       el.classList.add('gw-focus');
       prevFocusEl = el;
     }

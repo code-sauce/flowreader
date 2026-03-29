@@ -445,10 +445,15 @@ html, body {
 }
 
 .gw {
-  color: var(--text);
+  color: #444;
 }
 
-/* Focus styles: underline */
+/* Line highlight: all words on the active line */
+.gw-line {
+  color: var(--text-bright);
+}
+
+/* Focus styles: underline (on the active word within the line) */
 .reader-gradient[data-focus="underline"] .gw-focus {
   text-decoration: underline;
   text-decoration-color: var(--focus-color);
@@ -483,15 +488,18 @@ html, body {
   50% { opacity: 0.5; }
 }
 
-/* Focus styles: blur (all words blurred except focused) */
+/* Focus styles: blur (lines not active are blurred) */
 .reader-gradient[data-focus="blur"] .gw {
-  filter: blur(3px);
+  filter: blur(2.5px);
   transition: filter 0.15s ease;
+}
+
+.reader-gradient[data-focus="blur"] .gw-line {
+  filter: none;
 }
 
 .reader-gradient[data-focus="blur"] .gw-focus {
   filter: none;
-  color: var(--text-bright);
 }
 
 .reader-gradient[data-focus="blur"] .gw-paused {
