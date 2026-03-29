@@ -9,6 +9,7 @@ export interface ThemeSettings {
   fontSize: number;
   lineHeight: number;
   letterSpacing: number;
+  pageWidth: number;
 }
 
 export const DEFAULT_SETTINGS: ThemeSettings = {
@@ -17,6 +18,7 @@ export const DEFAULT_SETTINGS: ThemeSettings = {
   fontSize: 20,
   lineHeight: 2.2,
   letterSpacing: 0,
+  pageWidth: 680,
 };
 
 const THEME_COLORS: Record<ThemeName, Record<string, string>> = {
@@ -57,6 +59,7 @@ export function getThemeVars(settings: ThemeSettings): Record<string, string> {
     '--reader-font-size': `${settings.fontSize}px`,
     '--reader-line-height': `${settings.lineHeight}`,
     '--reader-letter-spacing': `${settings.letterSpacing}px`,
+    '--reader-max-width': `${settings.pageWidth}px`,
   };
 }
 

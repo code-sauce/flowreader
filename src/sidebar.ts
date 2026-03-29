@@ -70,6 +70,10 @@ function renderSettings(settings: ThemeSettings): string {
           <div class="setting-label">Spacing <span class="setting-value" id="ls-value">${settings.letterSpacing}px</span></div>
           <input type="range" class="setting-slider" id="letter-spacing-slider" min="0" max="4" step="0.5" value="${settings.letterSpacing}" />
         </div>
+        <div class="setting-group">
+          <div class="setting-label">Page width <span class="setting-value" id="pw-value">${settings.pageWidth}px</span></div>
+          <input type="range" class="setting-slider" id="page-width-slider" min="400" max="1200" step="20" value="${settings.pageWidth}" />
+        </div>
       </div>
     </div>
   `;
@@ -172,6 +176,14 @@ export async function mountSidebar(
   letterSpacingSlider.addEventListener('input', () => {
     currentSettings.letterSpacing = Number(letterSpacingSlider.value);
     container.querySelector('#ls-value')!.textContent = `${currentSettings.letterSpacing}px`;
+    saveSettings(currentSettings);
+    onSettingsChange(currentSettings);
+  });
+
+  const pageWidthSlider = container.querySelector('#page-width-slider') as HTMLInputElement;
+  pageWidthSlider.addEventListener('input', () => {
+    currentSettings.pageWidth = Number(pageWidthSlider.value);
+    container.querySelector('#pw-value')!.textContent = `${currentSettings.pageWidth}px`;
     saveSettings(currentSettings);
     onSettingsChange(currentSettings);
   });

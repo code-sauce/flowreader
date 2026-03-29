@@ -19,6 +19,7 @@
   --reader-font-size: 20px;
   --reader-line-height: 2.2;
   --reader-letter-spacing: 0px;
+  --reader-max-width: 680px;
 }
 
 html, body {
@@ -389,7 +390,7 @@ html, body {
   line-height: var(--reader-line-height);
   letter-spacing: var(--reader-letter-spacing);
   text-align: center;
-  max-width: 680px;
+  max-width: var(--reader-max-width);
   width: 100%;
   padding: 40px 32px;
   overflow-y: auto;

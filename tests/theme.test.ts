@@ -32,10 +32,11 @@ describe('getThemeVars', () => {
     expect(serif['--reader-font']).toContain('Georgia');
   });
 
-  it('includes font size, line height, letter spacing as CSS vars', () => {
-    const vars = getThemeVars({ ...DEFAULT_SETTINGS, fontSize: 24, lineHeight: 2.5, letterSpacing: 2 });
+  it('includes font size, line height, letter spacing, page width as CSS vars', () => {
+    const vars = getThemeVars({ ...DEFAULT_SETTINGS, fontSize: 24, lineHeight: 2.5, letterSpacing: 2, pageWidth: 800 });
     expect(vars['--reader-font-size']).toBe('24px');
     expect(vars['--reader-line-height']).toBe('2.5');
     expect(vars['--reader-letter-spacing']).toBe('2px');
+    expect(vars['--reader-max-width']).toBe('800px');
   });
 });
