@@ -146,8 +146,9 @@ export function mountReader(
   let wordElements: Map<number, HTMLElement> = new Map();
   let windowStart = 0;
   let windowEnd = 0;
-  const WINDOW_SIZE = 200;
-  const WINDOW_MARGIN = 50; // rebuild when within this many words of edge
+  const WINDOW_SIZE = 300;
+  const WINDOW_MARGIN = 80;
+  let scrollTargetTop = 0; // target scrollTop, updated every word
 
   function scrollLoop(): void {
     if (gradientEl.offsetParent === null) {
@@ -155,23 +156,23 @@ export function mountReader(
       return;
     }
 
-    // Keep focused word near vertical center
-    const focusEl = wordElements.get(state.position);
-    if (focusEl) {
-      const containerRect = gradientEl.getBoundingClientRect();
-      const elRect = focusEl.getBoundingClientRect();
-      const centerY = containerRect.top + containerRect.height * 0.45;
-      const diff = elRect.top - centerY;
-      if (Math.abs(diff) > 0.5) {
-        gradientEl.scrollTop += diff * 0.04;
-      }
+    const diff = scrollTargetTop - gradientEl.scrollTop;
+    if (Math.abs(diff) > 0.3) {
+      gradientEl.scrollTop += diff * 0.04;
     }
 
     scrollRaf = requestAnimationFrame(scrollLoop);
   }
 
   function buildWindow(): void {
-    windowStart = Math.max(0, state.position - Math.floor(WINDOW_SIZE / 2));
+    // Remember the focused element's position before rebuilding
+    const oldFocusEl = wordElements.get(state.position);
+    let oldFocusOffsetInContainer = 0;
+    if (oldFocusEl) {
+      oldFocusOffsetInContainer = oldFocusEl.getBoundingClientRect().top - gradientEl.getBoundingClientRect().top;
+    }
+
+    windowStart = Math.max(0, state.position - Math.floor(WINDOW_SIZE / 3));
     windowEnd = Math.min(state.words.length, windowStart + WINDOW_SIZE);
 
     const frag = document.createDocumentFragment();
@@ -187,13 +188,38 @@ export function mountReader(
     gradientEl.innerHTML = '';
     gradientEl.appendChild(frag);
     prevFocusEl = null;
+
+    // Restore scroll so the focused word stays in the same visual position
+    const newFocusEl = wordElements.get(state.position);
+    if (newFocusEl) {
+      const newOffset = newFocusEl.offsetTop - gradientEl.offsetTop;
+      gradientEl.scrollTop = newOffset - gradientEl.clientHeight * 0.45;
+      scrollTargetTop = gradientEl.scrollTop;
+    }
+  }
+
+  function updateScrollTarget(): void {
+    const el = wordElements.get(state.position);
+    if (!el) return;
+
+    const elTop = el.offsetTop - gradientEl.offsetTop;
+    const centered = elTop - gradientEl.clientHeight * 0.45;
+
+    // Add a micro-offset based on position within the window so even
+    // same-line words nudge the scroll slightly (prevents dead zones)
+    const windowFraction = (state.position - windowStart) / (windowEnd - windowStart);
+    const totalWindowScroll = gradientEl.scrollHeight - gradientEl.clientHeight;
+    const proportionalNudge = windowFraction * totalWindowScroll;
+
+    // 80% centered (accurate) + 20% proportional (smooth between lines)
+    scrollTargetTop = centered * 0.8 + proportionalNudge * 0.2;
   }
 
   function renderGradient(): void {
     // Rebuild window if position is near the edge
     if (wordElements.size === 0 ||
-        state.position < windowStart + WINDOW_MARGIN ||
-        state.position > windowEnd - WINDOW_MARGIN) {
+        state.position <= windowStart + WINDOW_MARGIN ||
+        state.position >= windowEnd - WINDOW_MARGIN) {
       buildWindow();
     }
 
@@ -206,6 +232,7 @@ export function mountReader(
     if (el) {
       el.classList.add('gw-focus');
       prevFocusEl = el;
+      updateScrollTarget();
     }
   }
 
