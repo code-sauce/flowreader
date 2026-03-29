@@ -212,15 +212,19 @@ export function mountReader(
     return page * WORDS_PER_PAGE;
   }
 
+  let renderedStart = 0; // first word index currently in DOM
+
   function buildPage(page: number): void {
     currentPage = page;
     totalPages = Math.ceil(state.words.length / WORDS_PER_PAGE);
+    // Render current page + next page for continuous feel
     const start = getPageStart(page);
-    const end = Math.min(start + WORDS_PER_PAGE, state.words.length);
+    const nextPageEnd = Math.min(start + WORDS_PER_PAGE * 2, state.words.length);
+    renderedStart = start;
 
     const frag = document.createDocumentFragment();
     wordElements = [];
-    for (let i = start; i < end; i++) {
+    for (let i = start; i < nextPageEnd; i++) {
       if (i > start) frag.appendChild(document.createTextNode(' '));
       const span = document.createElement('span');
       span.className = 'gw';
@@ -248,8 +252,17 @@ export function mountReader(
 
   function renderGradient(): void {
     const neededPage = getPageForPosition(state.position);
-    if (neededPage !== currentPage || wordElements.length === 0) {
+
+    // Rebuild if position is outside the rendered range
+    const renderedEnd = renderedStart + wordElements.length;
+    if (wordElements.length === 0 || state.position < renderedStart || state.position >= renderedEnd) {
       buildPage(neededPage);
+    }
+
+    // Update page counter when underline crosses into next page
+    if (neededPage !== currentPage) {
+      currentPage = neededPage;
+      pageIndicator.textContent = `Page ${currentPage + 1} of ${totalPages}`;
     }
 
     if (prevFocusEl) {
@@ -257,14 +270,12 @@ export function mountReader(
       prevFocusEl.classList.remove('gw-paused');
     }
 
-    const indexInPage = state.position - getPageStart(currentPage);
-    const el = wordElements[indexInPage];
+    const indexInArray = state.position - renderedStart;
+    const el = wordElements[indexInArray];
     if (el) {
       el.classList.add('gw-focus');
       prevFocusEl = el;
     }
-
-    pageIndicator.textContent = `Page ${currentPage + 1} of ${totalPages}`;
   }
 
   pagePrevBtn.addEventListener('click', (e) => {
