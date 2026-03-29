@@ -126,42 +126,59 @@ export function mountReader(
 
   let pageBuilt = false;
   let prevFocusEl: HTMLElement | null = null;
-  let scrollTarget: HTMLElement | null = null;
   let scrollRaf: number | null = null;
 
-  // Continuous easing scroll loop -- always running in page mode
-  // Looks ahead: if the next word is on a lower line, blend toward its
-  // position before the highlight gets there, so the transition is seamless.
-  function scrollLoop(): void {
-    if (!scrollTarget || gradientEl.offsetParent === null) {
-      scrollRaf = requestAnimationFrame(scrollLoop);
-      return;
-    }
+  // Analog scroll: linearly interpolate scroll position between words
+  // so the page drifts at a constant velocity -- no discrete jumps.
+  let scrollFromY = 0;  // scroll position when current word started
+  let scrollToY = 0;    // scroll position we want when next word starts
+  let wordStartTime = 0;
+  let wordDuration = 300; // ms until next word, updated each step
 
+  function updateScrollTargets(): void {
     const containerRect = gradientEl.getBoundingClientRect();
-    const currentRect = scrollTarget.getBoundingClientRect();
-    const centerY = containerRect.top + containerRect.height * 0.45;
+    const centerY = containerRect.height * 0.45;
 
-    // Look ahead: where is the next word?
+    // Current word position
+    const curEl = gradientEl.querySelector(`[data-idx="${state.position}"]`) as HTMLElement | null;
+    if (!curEl) return;
+    const curTop = curEl.offsetTop - gradientEl.offsetTop;
+    scrollFromY = curTop - centerY;
+
+    // Next word position (where we want to be by the time it becomes active)
     const nextIdx = state.position + 1;
     const nextEl = nextIdx < state.words.length
       ? gradientEl.querySelector(`[data-idx="${nextIdx}"]`) as HTMLElement | null
       : null;
-
-    let targetY = currentRect.top;
-
-    // If next word is on a different line, blend toward it
     if (nextEl) {
-      const nextRect = nextEl.getBoundingClientRect();
-      if (Math.abs(nextRect.top - currentRect.top) > 5) {
-        // Next word is on a new line -- bias the scroll target 60% toward it
-        targetY = currentRect.top + (nextRect.top - currentRect.top) * 0.6;
-      }
+      const nextTop = nextEl.offsetTop - gradientEl.offsetTop;
+      scrollToY = nextTop - centerY;
+    } else {
+      scrollToY = scrollFromY;
     }
 
-    const offset = targetY - centerY;
-    if (Math.abs(offset) > 0.5) {
-      gradientEl.scrollTop += offset * 0.03;
+    wordStartTime = performance.now();
+    // Calculate actual delay for this word
+    const word = state.words[state.position] ?? '';
+    const nextWord = state.words[state.position + 1] ?? '';
+    wordDuration = calculateDelay(word, nextWord, state.wpm);
+  }
+
+  function scrollLoop(): void {
+    if (gradientEl.offsetParent === null) {
+      scrollRaf = requestAnimationFrame(scrollLoop);
+      return;
+    }
+
+    const elapsed = performance.now() - wordStartTime;
+    // Linear interpolation: 0 at word start, 1 at word end
+    const t = Math.min(1, elapsed / Math.max(wordDuration, 1));
+    const targetScroll = scrollFromY + (scrollToY - scrollFromY) * t;
+
+    // Ease toward target to avoid micro-jitter
+    const diff = targetScroll - gradientEl.scrollTop;
+    if (Math.abs(diff) > 0.3) {
+      gradientEl.scrollTop += diff * 0.15;
     }
 
     scrollRaf = requestAnimationFrame(scrollLoop);
@@ -192,7 +209,7 @@ export function mountReader(
       el.classList.add('gw-focus');
       prevFocusEl = el;
 
-      scrollTarget = el;
+      updateScrollTargets();
     }
   }
 
