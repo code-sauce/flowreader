@@ -158,13 +158,18 @@ export function mountReader(
   const pagePrevBtn = container.querySelector('#page-prev') as HTMLElement;
   const pageNextBtn = container.querySelector('#page-next') as HTMLElement;
 
+  let pageFlipLock = false; // prevent rapid re-flips
+
   // Gentle auto-scroll to keep focused word near vertical center
+  // Also checks if scroll has passed halfway -- if so, flip page
   function scrollLoop(): void {
     if (gradientEl.offsetParent === null) {
       scrollRaf = requestAnimationFrame(scrollLoop);
       return;
     }
-    if (prevFocusEl) {
+
+    // Auto-scroll toward focused word
+    if (prevFocusEl && state.playing) {
       const containerRect = gradientEl.getBoundingClientRect();
       const elRect = prevFocusEl.getBoundingClientRect();
       const centerY = containerRect.top + containerRect.height * 0.45;
@@ -173,6 +178,33 @@ export function mountReader(
         gradientEl.scrollTop += diff * 0.06;
       }
     }
+
+    // Check if scroll passed halfway -- flip page
+    if (!pageFlipLock) {
+      const maxScroll = gradientEl.scrollHeight - gradientEl.clientHeight;
+      if (maxScroll > 0) {
+        const scrollFraction = gradientEl.scrollTop / maxScroll;
+        if (scrollFraction > 0.85 && currentPage < totalPages - 1) {
+          pageFlipLock = true;
+          const nextPage = currentPage + 1;
+          state.position = getPageStart(nextPage);
+          buildPage(nextPage);
+          gradientEl.scrollTop = 0;
+          renderGradient();
+          setTimeout(() => { pageFlipLock = false; }, 300);
+        } else if (scrollFraction < 0.05 && gradientEl.scrollTop < 5 && currentPage > 0) {
+          pageFlipLock = true;
+          const prevPage = currentPage - 1;
+          const prevEnd = Math.min(getPageStart(prevPage) + WORDS_PER_PAGE, state.words.length) - 1;
+          state.position = prevEnd;
+          buildPage(prevPage);
+          gradientEl.scrollTop = gradientEl.scrollHeight - gradientEl.clientHeight;
+          renderGradient();
+          setTimeout(() => { pageFlipLock = false; }, 300);
+        }
+      }
+    }
+
     scrollRaf = requestAnimationFrame(scrollLoop);
   }
 
