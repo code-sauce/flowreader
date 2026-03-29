@@ -12,8 +12,11 @@ let currentArticleId: string | null = null;
 let currentSettings: ThemeSettings;
 
 async function init(): Promise<void> {
+  console.log('[FlowReader] init start');
   currentSettings = await loadSettings();
+  console.log('[FlowReader] settings loaded', currentSettings);
   applyTheme(currentSettings);
+  console.log('[FlowReader] theme applied');
 
   app.innerHTML = `
     <div id="layout">
@@ -87,8 +90,11 @@ async function init(): Promise<void> {
     }
   }) as EventListener);
 
+  console.log('[FlowReader] layout mounted, navigating to home');
   await navigateToHome();
+  console.log('[FlowReader] home mounted, opening sidebar');
   toggleSidebar();
+  console.log('[FlowReader] init complete');
 }
 
 init().catch(err => {
