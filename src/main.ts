@@ -91,4 +91,7 @@ async function init(): Promise<void> {
   toggleSidebar();
 }
 
-init();
+init().catch(err => {
+  console.error('FlowReader init failed:', err);
+  app.textContent = 'Failed to load. Check console.';
+});
