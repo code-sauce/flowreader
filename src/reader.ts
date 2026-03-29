@@ -217,9 +217,9 @@ export function mountReader(
   function buildPage(page: number): void {
     currentPage = page;
     totalPages = Math.ceil(state.words.length / WORDS_PER_PAGE);
-    // Render current page + next page for continuous feel
+    // Render current + next 2 pages for continuous feel
     const start = getPageStart(page);
-    const nextPageEnd = Math.min(start + WORDS_PER_PAGE * 2, state.words.length);
+    const nextPageEnd = Math.min(start + WORDS_PER_PAGE * 3, state.words.length);
     renderedStart = start;
 
     const frag = document.createDocumentFragment();
@@ -252,9 +252,10 @@ export function mountReader(
   function renderGradient(): void {
     const neededPage = getPageForPosition(state.position);
 
-    // Rebuild if position is outside the rendered range
+    // Rebuild when entering the 2nd rendered page (keeps 1 page of lookahead)
     const renderedEnd = renderedStart + wordElements.length;
-    if (wordElements.length === 0 || state.position < renderedStart || state.position >= renderedEnd) {
+    const rebuildAt = renderedStart + WORDS_PER_PAGE; // start of 2nd rendered page
+    if (wordElements.length === 0 || state.position < renderedStart || state.position >= renderedEnd || (neededPage > currentPage && state.position >= rebuildAt)) {
       buildPage(neededPage);
     }
 
