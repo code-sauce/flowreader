@@ -179,28 +179,24 @@ export function mountReader(
       }
     }
 
-    // Check if scroll passed halfway -- flip page
-    if (!pageFlipLock) {
+    // Check if scroll passed threshold -- flip page (only from manual scroll when paused)
+    if (!pageFlipLock && !state.playing) {
       const maxScroll = gradientEl.scrollHeight - gradientEl.clientHeight;
-      if (maxScroll > 0) {
+      if (maxScroll > 10) {
         const scrollFraction = gradientEl.scrollTop / maxScroll;
-        if (scrollFraction > 0.85 && currentPage < totalPages - 1) {
+        if (scrollFraction > 0.9 && currentPage < totalPages - 1) {
           pageFlipLock = true;
-          const nextPage = currentPage + 1;
-          state.position = getPageStart(nextPage);
-          buildPage(nextPage);
+          goToPage(currentPage + 1);
           gradientEl.scrollTop = 0;
-          renderGradient();
-          setTimeout(() => { pageFlipLock = false; }, 300);
-        } else if (scrollFraction < 0.05 && gradientEl.scrollTop < 5 && currentPage > 0) {
+          setTimeout(() => { pageFlipLock = false; }, 500);
+        } else if (scrollFraction < 0.02 && currentPage > 0) {
           pageFlipLock = true;
           const prevPage = currentPage - 1;
-          const prevEnd = Math.min(getPageStart(prevPage) + WORDS_PER_PAGE, state.words.length) - 1;
-          state.position = prevEnd;
+          state.position = getPageStart(prevPage);
           buildPage(prevPage);
           gradientEl.scrollTop = gradientEl.scrollHeight - gradientEl.clientHeight;
           renderGradient();
-          setTimeout(() => { pageFlipLock = false; }, 300);
+          setTimeout(() => { pageFlipLock = false; }, 500);
         }
       }
     }
