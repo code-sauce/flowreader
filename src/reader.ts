@@ -175,7 +175,7 @@ export function mountReader(
       const centerY = containerRect.top + containerRect.height * 0.45;
       const diff = elRect.top - centerY;
       if (Math.abs(diff) > 0.5) {
-        gradientEl.scrollTop += diff * 0.06;
+        gradientEl.scrollTop += diff * 0.08;
       }
     }
 
@@ -234,7 +234,6 @@ export function mountReader(
     }
     gradientEl.innerHTML = '';
     gradientEl.appendChild(frag);
-    gradientEl.scrollTop = 0;
     prevFocusEl = null;
 
     pageIndicator.textContent = `Page ${page + 1} of ${totalPages}`;
@@ -244,7 +243,7 @@ export function mountReader(
     page = Math.max(0, Math.min(page, totalPages - 1));
     if (page === currentPage && wordElements.length > 0) return;
     buildPage(page);
-    // Set position to start of page
+    gradientEl.scrollTop = 0; // reset scroll on explicit page jump
     state.position = getPageStart(page);
     renderGradient();
     savePosition();
