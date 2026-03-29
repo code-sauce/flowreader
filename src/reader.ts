@@ -130,21 +130,40 @@ export function mountReader(
   let scrollRaf: number | null = null;
 
   // Continuous easing scroll loop -- always running in page mode
-  // Easing scales with offset: gentle for small drifts, faster for big jumps
+  // Looks ahead: if the next word is on a lower line, blend toward its
+  // position before the highlight gets there, so the transition is seamless.
   function scrollLoop(): void {
-    if (scrollTarget && gradientEl.offsetParent !== null) {
-      const containerRect = gradientEl.getBoundingClientRect();
-      const elRect = scrollTarget.getBoundingClientRect();
-      const centerY = containerRect.top + containerRect.height * 0.45;
-      const offset = elRect.top - centerY;
-      const absOffset = Math.abs(offset);
-      if (absOffset > 0.5) {
-        // Larger offsets get a higher easing factor to prevent end-of-line jitter
-        // Range: 0.01 (tiny drift) to 0.06 (large line jump)
-        const ease = Math.min(0.06, 0.01 + absOffset * 0.001);
-        gradientEl.scrollTop += offset * ease;
+    if (!scrollTarget || gradientEl.offsetParent === null) {
+      scrollRaf = requestAnimationFrame(scrollLoop);
+      return;
+    }
+
+    const containerRect = gradientEl.getBoundingClientRect();
+    const currentRect = scrollTarget.getBoundingClientRect();
+    const centerY = containerRect.top + containerRect.height * 0.45;
+
+    // Look ahead: where is the next word?
+    const nextIdx = state.position + 1;
+    const nextEl = nextIdx < state.words.length
+      ? gradientEl.querySelector(`[data-idx="${nextIdx}"]`) as HTMLElement | null
+      : null;
+
+    let targetY = currentRect.top;
+
+    // If next word is on a different line, blend toward it
+    if (nextEl) {
+      const nextRect = nextEl.getBoundingClientRect();
+      if (Math.abs(nextRect.top - currentRect.top) > 5) {
+        // Next word is on a new line -- bias the scroll target 40% toward it
+        targetY = currentRect.top + (nextRect.top - currentRect.top) * 0.4;
       }
     }
+
+    const offset = targetY - centerY;
+    if (Math.abs(offset) > 0.5) {
+      gradientEl.scrollTop += offset * 0.02;
+    }
+
     scrollRaf = requestAnimationFrame(scrollLoop);
   }
 
