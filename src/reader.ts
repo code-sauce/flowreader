@@ -145,13 +145,10 @@ export function mountReader(
   let currentHighlightMode: HighlightMode = 'line';
   let currentFocusStyle: FocusStyle = 'underline';
 
-  // BeeLine color pairs: end of line N matches start of line N+1
-  const BEELINE_COLORS = [
-    ['#5B8DEF', '#E85D75'],  // blue -> rose
-    ['#E85D75', '#4EC9B0'],  // rose -> teal
-    ['#4EC9B0', '#D4A843'],  // teal -> gold
-    ['#D4A843', '#5B8DEF'],  // gold -> blue (cycles)
-  ];
+  // BeeLine: just 2 muted colors, alternating. Only color the last 3 words
+  // of each line and first 3 of the next. Middle stays normal text color.
+  const BEE_A = '#7B9ED8'; // muted blue
+  const BEE_B = '#D88B7B'; // muted coral
 
   function applyBeelineColors(): void {
     if (currentFocusStyle !== 'beeline' || wordElements.length === 0) return;
@@ -170,19 +167,34 @@ export function mountReader(
     }
     if (currentLine.length) lines.push(currentLine);
 
-    // Apply gradient colors per line
-    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-      const pair = BEELINE_COLORS[lineIdx % BEELINE_COLORS.length];
-      const lineWords = lines[lineIdx];
+    const EDGE = 3; // how many words at each edge get colored
+
+    for (let li = 0; li < lines.length; li++) {
+      const lineWords = lines[li];
+      // Alternate color per line: even=A->B, odd=B->A
+      const startColor = li % 2 === 0 ? BEE_A : BEE_B;
+      const endColor = li % 2 === 0 ? BEE_B : BEE_A;
+      const sc = hexToRgb(startColor);
+      const ec = hexToRgb(endColor);
+
       for (let wi = 0; wi < lineWords.length; wi++) {
-        const t = lineWords.length > 1 ? wi / (lineWords.length - 1) : 0;
-        // Interpolate between pair[0] and pair[1]
-        const c0 = hexToRgb(pair[0]);
-        const c1 = hexToRgb(pair[1]);
-        const r = Math.round(c0[0] + (c1[0] - c0[0]) * t);
-        const g = Math.round(c0[1] + (c1[1] - c0[1]) * t);
-        const b = Math.round(c0[2] + (c1[2] - c0[2]) * t);
-        lineWords[wi].style.color = `rgb(${r},${g},${b})`;
+        if (wi < EDGE) {
+          // Fade from color to normal over first 3 words
+          const t = 1 - wi / EDGE; // 1 at start, fades to 0
+          const r = Math.round(sc[0] * t + 170 * (1 - t));
+          const g = Math.round(sc[1] * t + 170 * (1 - t));
+          const b = Math.round(sc[2] * t + 170 * (1 - t));
+          lineWords[wi].style.color = `rgb(${r},${g},${b})`;
+        } else if (wi >= lineWords.length - EDGE) {
+          // Fade from normal to color over last 3 words
+          const t = (wi - (lineWords.length - EDGE)) / (EDGE - 1);
+          const r = Math.round(170 * (1 - t) + ec[0] * t);
+          const g = Math.round(170 * (1 - t) + ec[1] * t);
+          const b = Math.round(170 * (1 - t) + ec[2] * t);
+          lineWords[wi].style.color = `rgb(${r},${g},${b})`;
+        } else {
+          lineWords[wi].style.color = '';
+        }
       }
     }
   }
