@@ -12,7 +12,26 @@ function isUrl(text: string): boolean {
 }
 
 async function fetchHtml(url: string): Promise<string | null> {
-  // Try direct fetch first
+  // If running inside extension iframe, use extension's CORS-free fetch
+  if (window.parent !== window) {
+    try {
+      const result = await new Promise<{ ok: boolean; html?: string }>((resolve) => {
+        const handler = (e: MessageEvent) => {
+          if (e.data?.type === 'flowreader-fetch-response') {
+            window.removeEventListener('message', handler);
+            resolve(e.data);
+          }
+        };
+        window.addEventListener('message', handler);
+        window.parent.postMessage({ type: 'flowreader-fetch-url', url }, '*');
+        // Timeout after 10s
+        setTimeout(() => { window.removeEventListener('message', handler); resolve({ ok: false }); }, 10000);
+      });
+      if (result.ok && result.html) return result.html;
+    } catch { /* fall through */ }
+  }
+
+  // Try direct fetch
   try {
     const response = await fetch(url);
     if (response.ok) return await response.text();

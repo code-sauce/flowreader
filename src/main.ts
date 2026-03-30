@@ -89,6 +89,30 @@ async function init(): Promise<void> {
 
   window.addEventListener('annotations-changed', () => refreshSidebar());
 
+  // Listen for text from browser extension via postMessage
+  window.addEventListener('message', async (e) => {
+    if (e.data?.type === 'flowreader-load' && e.data.text) {
+      const { parseText, extractTitle } = await import('./parser');
+      const words = parseText(e.data.text);
+      if (words.length === 0) return;
+      const defaultWPM = (await storage.getSetting('defaultWPM') as number) || 300;
+      const article = {
+        id: crypto.randomUUID(),
+        title: extractTitle(e.data.text),
+        source: e.data.source || 'Extension',
+        fullText: e.data.text,
+        words,
+        currentPosition: 0,
+        totalWords: words.length,
+        lastWPM: defaultWPM,
+        createdAt: Date.now(),
+        lastReadAt: Date.now(),
+      };
+      await storage.saveArticle(article);
+      await navigateToReader(article.id);
+    }
+  });
+
   await navigateToHome();
   toggleSidebar();
 }

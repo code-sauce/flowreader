@@ -1,0 +1,20 @@
+#flowreader-float-btn {
+  position: absolute;
+  z-index: 2147483647;
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transform: translateX(-50%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  transition: opacity 0.15s;
+}
+
+#flowreader-float-btn:hover {
+  opacity: 0.9;
+}
