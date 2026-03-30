@@ -642,7 +642,6 @@ html, body {
 /* Focus styles: blur (lines not active are blurred) */
 .reader-gradient[data-focus="blur"] .gw {
   filter: blur(2.5px);
-  transition: filter 0.15s ease;
 }
 
 .reader-gradient[data-focus="blur"] .gw-line {
@@ -665,7 +664,6 @@ html, body {
 /* Focus styles: ruler (reading window -- dim everything outside) */
 .reader-gradient[data-focus="ruler"] .gw {
   opacity: 0.1;
-  transition: opacity 0.15s ease;
 }
 
 .reader-gradient[data-focus="ruler"] .gw-line {
