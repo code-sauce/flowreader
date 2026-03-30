@@ -11,13 +11,29 @@ function isUrl(text: string): boolean {
   }
 }
 
-async function fetchArticle(url: string): Promise<{ title: string; text: string } | null> {
+async function fetchHtml(url: string): Promise<string | null> {
+  // Try direct fetch first
   try {
     const response = await fetch(url);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const html = await response.text();
+    if (response.ok) return await response.text();
+  } catch { /* CORS blocked, try proxy */ }
+
+  // Fallback: CORS proxy
+  try {
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    const response = await fetch(proxyUrl);
+    if (response.ok) return await response.text();
+  } catch { /* proxy also failed */ }
+
+  return null;
+}
+
+async function fetchArticle(url: string): Promise<{ title: string; text: string } | null> {
+  const html = await fetchHtml(url);
+  if (!html) return null;
+
+  try {
     const doc = new DOMParser().parseFromString(html, 'text/html');
-    // Fix relative URLs for images etc
     const base = doc.createElement('base');
     base.href = url;
     doc.head.prepend(base);
@@ -25,7 +41,7 @@ async function fetchArticle(url: string): Promise<{ title: string; text: string 
     if (!article || !article.textContent?.trim()) return null;
     return { title: article.title || url, text: article.textContent };
   } catch (err) {
-    console.error('Failed to fetch URL:', err);
+    console.error('Failed to parse article:', err);
     return null;
   }
 }
