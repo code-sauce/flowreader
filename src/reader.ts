@@ -269,10 +269,14 @@ export function mountReader(
       if (i > renderedStart) frag.appendChild(document.createTextNode(' '));
       const span = document.createElement('span');
       span.className = 'gw';
-      const ann = annotationMap.get(i);
-      if (ann) {
-        span.classList.add(ann.type === 'bookmark' ? 'gw-bookmark' : 'gw-note');
-        span.title = ann.text || '';
+      // Check if this word falls within any annotation range
+      for (const [, ann] of annotationMap) {
+        const end = ann.endPosition ?? ann.position;
+        if (i >= ann.position && i <= end) {
+          span.classList.add(ann.type === 'bookmark' ? 'gw-bookmark' : 'gw-note');
+          if (ann.text) span.title = ann.text;
+          break;
+        }
       }
       span.textContent = state.words[i];
       wordElements.push(span);
@@ -547,18 +551,20 @@ export function mountReader(
 
   function addBookmark(): void {
     if (state.playing) pause();
-    const context = state.words.slice(state.position, state.position + 6).join(' ');
-    const label = context.length > 30 ? context.slice(0, 30) + '...' : context;
+    const [sentStart, sentEnd] = findSentenceBounds(state.words, state.position);
+    const sentence = state.words.slice(sentStart, sentEnd + 1).join(' ');
+    const label = sentence.length > 60 ? sentence.slice(0, 60) + '...' : sentence;
     const annotation: Annotation = {
       id: crypto.randomUUID(),
       articleId,
       type: 'bookmark',
-      position: state.position,
+      position: sentStart,
+      endPosition: sentEnd,
       text: label,
       createdAt: Date.now(),
     };
     storage.saveAnnotation(annotation);
-    showToast('Bookmarked');
+    showToast('Sentence bookmarked');
     window.dispatchEvent(new CustomEvent('annotations-changed'));
   }
 
@@ -566,13 +572,16 @@ export function mountReader(
     if (state.playing) pause();
     const note = prompt('Add a note:');
     if (!note) return;
-    const context = state.words.slice(state.position, state.position + 6).join(' ');
+    const [sentStart, sentEnd] = findSentenceBounds(state.words, state.position);
+    const sentence = state.words.slice(sentStart, sentEnd + 1).join(' ');
+    const label = sentence.length > 60 ? sentence.slice(0, 60) + '...' : sentence;
     const annotation: Annotation = {
       id: crypto.randomUUID(),
       articleId,
       type: 'note',
-      position: state.position,
-      text: note,
+      position: sentStart,
+      endPosition: sentEnd,
+      text: note + ' — "' + label + '"',
       createdAt: Date.now(),
     };
     storage.saveAnnotation(annotation);
