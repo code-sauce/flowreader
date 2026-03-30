@@ -138,14 +138,11 @@ export async function mountSidebar(
     : [];
   const annotationsHtml = annotations.length > 0
     ? annotations.map(a => {
-      const icon = a.type === 'bookmark' ? '&#x1F516;' : '&#x1F4DD;';
       const label = a.text || `Word ${a.position}`;
       return `
         <div class="annotation-item" data-pos="${a.position}">
-          <span class="annotation-icon">${icon}</span>
           <div class="annotation-body">
             <div class="annotation-label">${label}</div>
-            <div class="annotation-meta">${a.type} · word ${a.position}</div>
           </div>
           <button class="annotation-delete" data-ann-id="${a.id}">&times;</button>
         </div>`;

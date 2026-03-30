@@ -273,7 +273,7 @@ export function mountReader(
       for (const [, ann] of annotationMap) {
         const end = ann.endPosition ?? ann.position;
         if (i >= ann.position && i <= end) {
-          span.classList.add(ann.type === 'bookmark' ? 'gw-bookmark' : 'gw-note');
+          span.classList.add('gw-bookmark');
           if (ann.text) span.title = ann.text;
           break;
         }
@@ -554,38 +554,18 @@ export function mountReader(
     const [sentStart, sentEnd] = findSentenceBounds(state.words, state.position);
     const sentence = state.words.slice(sentStart, sentEnd + 1).join(' ');
     const label = sentence.length > 60 ? sentence.slice(0, 60) + '...' : sentence;
+    const note = prompt('Add a note (optional):') || '';
     const annotation: Annotation = {
       id: crypto.randomUUID(),
       articleId,
       type: 'bookmark',
       position: sentStart,
       endPosition: sentEnd,
-      text: label,
+      text: note ? note + ' — "' + label + '"' : label,
       createdAt: Date.now(),
     };
     storage.saveAnnotation(annotation);
-    showToast('Sentence bookmarked');
-    window.dispatchEvent(new CustomEvent('annotations-changed'));
-  }
-
-  function addNote(): void {
-    if (state.playing) pause();
-    const note = prompt('Add a note:');
-    if (!note) return;
-    const [sentStart, sentEnd] = findSentenceBounds(state.words, state.position);
-    const sentence = state.words.slice(sentStart, sentEnd + 1).join(' ');
-    const label = sentence.length > 60 ? sentence.slice(0, 60) + '...' : sentence;
-    const annotation: Annotation = {
-      id: crypto.randomUUID(),
-      articleId,
-      type: 'note',
-      position: sentStart,
-      endPosition: sentEnd,
-      text: note + ' — "' + label + '"',
-      createdAt: Date.now(),
-    };
-    storage.saveAnnotation(annotation);
-    showToast('Note saved');
+    showToast(note ? 'Bookmarked with note' : 'Bookmarked');
     window.dispatchEvent(new CustomEvent('annotations-changed'));
   }
 
@@ -641,11 +621,6 @@ export function mountReader(
       case 'B':
         e.preventDefault();
         addBookmark();
-        break;
-      case 'n':
-      case 'N':
-        e.preventDefault();
-        addNote();
         break;
     }
   }

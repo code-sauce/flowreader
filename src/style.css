@@ -540,10 +540,7 @@ html, body {
 
 .gw-bookmark {
   border-bottom: 2px solid #f39c12;
-}
-
-.gw-note {
-  background: rgba(52, 152, 219, 0.2);
+  background: rgba(243, 156, 18, 0.1);
   border-radius: 2px;
 }
 
@@ -607,8 +604,7 @@ html, body {
 }
 
 .reader-gradient[data-focus="blur"] .gw-focus,
-.reader-gradient[data-focus="blur"] .gw-bookmark,
-.reader-gradient[data-focus="blur"] .gw-note {
+.reader-gradient[data-focus="blur"] .gw-bookmark {
   filter: none;
 }
 
@@ -631,8 +627,7 @@ html, body {
 }
 
 .reader-gradient[data-focus="ruler"] .gw-focus,
-.reader-gradient[data-focus="ruler"] .gw-bookmark,
-.reader-gradient[data-focus="ruler"] .gw-note {
+.reader-gradient[data-focus="ruler"] .gw-bookmark {
   opacity: 1;
 }
 
