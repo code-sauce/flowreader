@@ -84,6 +84,14 @@ function renderSettings(settings: ThemeSettings): string {
           </div>
         </div>
         <div class="setting-group">
+          <div class="setting-label">Pace</div>
+          <div class="setting-row">
+            <button class="pace-btn" data-pace="comprehension" data-wpm="150">Comprehend</button>
+            <button class="pace-btn" data-pace="balanced" data-wpm="250">Balanced</button>
+            <button class="pace-btn" data-pace="speed" data-wpm="400">Speed</button>
+          </div>
+        </div>
+        <div class="setting-group">
           <div class="setting-label">Size <span class="setting-value" id="size-value">${settings.fontSize}px</span></div>
           <input type="range" class="setting-slider" id="font-size-slider" min="14" max="36" step="1" value="${settings.fontSize}" />
         </div>
@@ -176,6 +184,14 @@ export async function mountSidebar(
       btn.classList.add('active');
       saveSettings(currentSettings);
       onSettingsChange(currentSettings);
+    });
+  });
+
+  // Pace buttons (set WPM via custom event)
+  container.querySelectorAll('.pace-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const wpm = Number((btn as HTMLElement).dataset.wpm);
+      window.dispatchEvent(new CustomEvent('set-wpm', { detail: wpm }));
     });
   });
 

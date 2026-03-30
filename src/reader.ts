@@ -31,7 +31,7 @@ export function calculateDelay(word: string, nextWord: string, wpm: number): num
   }
 
   if (nextWord === '') {
-    multiplier *= 2;
+    multiplier *= 3.5;
   }
 
   return base * multiplier;
@@ -44,6 +44,24 @@ export function createReaderState(words: string[], wpm: number, position = 0, mo
 export function adjustWpm(current: number, direction: 'up' | 'down'): number {
   const next = direction === 'up' ? current + 25 : current - 25;
   return Math.min(1000, Math.max(100, next));
+}
+
+function isSentenceEnd(word: string): boolean {
+  const last = word[word.length - 1];
+  return last === '.' || last === '?' || last === '!';
+}
+
+// Find sentence boundaries around a position: [start, end] (inclusive)
+function findSentenceBounds(words: string[], pos: number): [number, number] {
+  let start = 0;
+  for (let i = pos - 1; i >= 0; i--) {
+    if (isSentenceEnd(words[i])) { start = i + 1; break; }
+  }
+  let end = words.length - 1;
+  for (let i = pos; i < words.length; i++) {
+    if (isSentenceEnd(words[i])) { end = i; break; }
+  }
+  return [start, end];
 }
 
 // Find the start of the previous sentence
@@ -136,6 +154,11 @@ export function mountReader(
   // Listen for live settings changes
   window.addEventListener('theme-changed', ((e: CustomEvent) => {
     applyFocusStyle(e.detail?.focusStyle);
+  }) as EventListener);
+
+  // Listen for pace preset changes
+  window.addEventListener('set-wpm', ((e: CustomEvent) => {
+    updateWpm(e.detail as number);
   }) as EventListener);
 
   const wpmLabel = container.querySelector('#reader-wpm') as HTMLElement;
@@ -277,25 +300,26 @@ export function mountReader(
     const idx = state.position - renderedStart;
     const el = wordElements[idx];
     if (el) {
-      const lineTop = el.offsetTop;
-
-      // Collect unique line tops to find nearby lines
-      const lineTops = [...new Set(wordElements.map(w => w.offsetTop))].sort((a, b) => a - b);
-      const currentLineIdx = lineTops.findIndex(t => Math.abs(t - lineTop) < 2);
+      // Find current sentence boundaries
+      const [sentStart, sentEnd] = findSentenceBounds(state.words, state.position);
 
       prevLineEls = [];
       prevNearEls = [];
 
-      for (const w of wordElements) {
-        const wLineIdx = lineTops.findIndex(t => Math.abs(t - w.offsetTop) < 2);
-        const dist = Math.abs(wLineIdx - currentLineIdx);
-
-        if (dist === 0) {
+      // Highlight current sentence + nearby context when paused
+      for (let i = 0; i < wordElements.length; i++) {
+        const wordIdx = renderedStart + i;
+        const w = wordElements[i];
+        if (wordIdx >= sentStart && wordIdx <= sentEnd) {
           w.classList.add('gw-line');
           prevLineEls.push(w);
-        } else if (!state.playing && dist <= 3) {
-          w.classList.add('gw-near');
-          prevNearEls.push(w);
+        } else if (!state.playing) {
+          // When paused, show adjacent sentences dimly
+          const dist = wordIdx < sentStart ? sentStart - wordIdx : wordIdx - sentEnd;
+          if (dist <= 30) {
+            w.classList.add('gw-near');
+            prevNearEls.push(w);
+          }
         }
       }
 

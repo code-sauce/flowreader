@@ -40,9 +40,9 @@ describe('calculateDelay', () => {
     expect(delay).toBeCloseTo(baseDelay * 1.3 * 1.5);
   });
 
-  it('returns 2x delay when next word is empty (paragraph break)', () => {
+  it('returns 3.5x delay when next word is empty (paragraph break)', () => {
     const delay = calculateDelay('end.', '', 300);
-    expect(delay).toBeCloseTo(baseDelay * 1.5 * 2);
+    expect(delay).toBeCloseTo(baseDelay * 1.5 * 3.5);
   });
 });
 

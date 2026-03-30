@@ -299,6 +299,23 @@ html, body {
   border-color: var(--text);
 }
 
+.pace-btn {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 12px;
+  background: var(--bg);
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.pace-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-bright);
+}
+
 .theme-btn.active,
 .font-btn.active,
 .focus-btn.active {
