@@ -1,6 +1,6 @@
 import { storage } from './storage';
 
-export type ThemeName = 'dark' | 'sepia' | 'light';
+export type ThemeName = 'dark' | 'sepia' | 'light' | 'nord' | 'monokai' | 'solarized' | 'ocean' | 'rose';
 export type FontFamily = 'mono' | 'sans' | 'serif';
 
 export type FocusStyle = 'underline' | 'highlight' | 'blur' | 'ruler';
@@ -52,6 +52,41 @@ const THEME_COLORS: Record<ThemeName, Record<string, string>> = {
     '--bg-hover': '#eaeaea',
     '--text': '#333',
     '--text-bright': '#111',
+  },
+  nord: {
+    '--bg': '#2e3440',
+    '--bg-surface': '#3b4252',
+    '--bg-hover': '#434c5e',
+    '--text': '#8fbcbb',
+    '--text-bright': '#eceff4',
+  },
+  monokai: {
+    '--bg': '#272822',
+    '--bg-surface': '#2d2e27',
+    '--bg-hover': '#3e3d32',
+    '--text': '#a6e22e',
+    '--text-bright': '#f8f8f2',
+  },
+  solarized: {
+    '--bg': '#002b36',
+    '--bg-surface': '#073642',
+    '--bg-hover': '#094050',
+    '--text': '#839496',
+    '--text-bright': '#eee8d5',
+  },
+  ocean: {
+    '--bg': '#1b2838',
+    '--bg-surface': '#1e3045',
+    '--bg-hover': '#243852',
+    '--text': '#6b93b0',
+    '--text-bright': '#c4dde8',
+  },
+  rose: {
+    '--bg': '#1a1118',
+    '--bg-surface': '#231720',
+    '--bg-hover': '#2d1e28',
+    '--text': '#b08a9a',
+    '--text-bright': '#e8d0dc',
   },
 };
 

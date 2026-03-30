@@ -55,10 +55,15 @@ function renderSettings(settings: ThemeSettings): string {
       <div class="sidebar-accordion-body" id="settings-body">
         <div class="setting-group">
           <div class="setting-label">Theme</div>
-          <div class="setting-row">
+          <div class="setting-row theme-grid">
             ${themeBtn('dark', 'Dark')}
-            ${themeBtn('sepia', 'Sepia')}
             ${themeBtn('light', 'Light')}
+            ${themeBtn('sepia', 'Sepia')}
+            ${themeBtn('nord', 'Nord')}
+            ${themeBtn('monokai', 'Monokai')}
+            ${themeBtn('solarized', 'Solar')}
+            ${themeBtn('ocean', 'Ocean')}
+            ${themeBtn('rose', 'Rose')}
           </div>
         </div>
         <div class="setting-group">
