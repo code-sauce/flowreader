@@ -145,82 +145,11 @@ export function mountReader(
   let currentHighlightMode: HighlightMode = 'line';
   let currentFocusStyle: FocusStyle = 'underline';
 
-  // BeeLine: just 2 muted colors, alternating. Only color the last 3 words
-  // of each line and first 3 of the next. Middle stays normal text color.
-  const BEE_A = '#7B9ED8'; // muted blue
-  const BEE_B = '#D88B7B'; // muted coral
-
-  function applyBeelineColors(): void {
-    if (currentFocusStyle !== 'beeline' || wordElements.length === 0) return;
-
-    // Group words by visual line
-    const lines: HTMLElement[][] = [];
-    let currentLine: HTMLElement[] = [];
-    let lastTop = -1;
-    for (const w of wordElements) {
-      if (lastTop >= 0 && Math.abs(w.offsetTop - lastTop) > 2) {
-        lines.push(currentLine);
-        currentLine = [];
-      }
-      currentLine.push(w);
-      lastTop = w.offsetTop;
-    }
-    if (currentLine.length) lines.push(currentLine);
-
-    const EDGE = 3; // how many words at each edge get colored
-
-    for (let li = 0; li < lines.length; li++) {
-      const lineWords = lines[li];
-      // Alternate color per line: even=A->B, odd=B->A
-      const startColor = li % 2 === 0 ? BEE_A : BEE_B;
-      const endColor = li % 2 === 0 ? BEE_B : BEE_A;
-      const sc = hexToRgb(startColor);
-      const ec = hexToRgb(endColor);
-
-      for (let wi = 0; wi < lineWords.length; wi++) {
-        if (wi < EDGE) {
-          // Fade from color to normal over first 3 words
-          const t = 1 - wi / EDGE; // 1 at start, fades to 0
-          const r = Math.round(sc[0] * t + 170 * (1 - t));
-          const g = Math.round(sc[1] * t + 170 * (1 - t));
-          const b = Math.round(sc[2] * t + 170 * (1 - t));
-          lineWords[wi].style.color = `rgb(${r},${g},${b})`;
-        } else if (wi >= lineWords.length - EDGE) {
-          // Fade from normal to color over last 3 words
-          const t = (wi - (lineWords.length - EDGE)) / (EDGE - 1);
-          const r = Math.round(170 * (1 - t) + ec[0] * t);
-          const g = Math.round(170 * (1 - t) + ec[1] * t);
-          const b = Math.round(170 * (1 - t) + ec[2] * t);
-          lineWords[wi].style.color = `rgb(${r},${g},${b})`;
-        } else {
-          lineWords[wi].style.color = '';
-        }
-      }
-    }
-  }
-
-  function clearBeelineColors(): void {
-    for (const w of wordElements) {
-      w.style.color = '';
-    }
-  }
-
-  function hexToRgb(hex: string): [number, number, number] {
-    const n = parseInt(hex.slice(1), 16);
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-  }
-
   function applySettings(focusStyle?: FocusStyle, hlMode?: HighlightMode): void {
     const newStyle = focusStyle || 'underline';
-    if (currentFocusStyle === 'beeline' && newStyle !== 'beeline') {
-      clearBeelineColors();
-    }
     currentFocusStyle = newStyle;
     gradientEl.dataset.focus = newStyle;
     currentHighlightMode = hlMode || 'line';
-    if (newStyle === 'beeline') {
-      requestAnimationFrame(applyBeelineColors);
-    }
   }
 
   storage.getSetting('themeSettings').then((saved: unknown) => {
@@ -334,10 +263,6 @@ export function mountReader(
       }
     }
 
-    // Apply beeline colors after layout
-    if (currentFocusStyle === 'beeline') {
-      requestAnimationFrame(applyBeelineColors);
-    }
   }
 
   // When paused and user scrolls, find the word nearest the center and update position

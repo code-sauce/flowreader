@@ -3,7 +3,7 @@ import { storage } from './storage';
 export type ThemeName = 'dark' | 'sepia' | 'light';
 export type FontFamily = 'mono' | 'sans' | 'serif';
 
-export type FocusStyle = 'underline' | 'highlight' | 'blur' | 'ruler' | 'beeline';
+export type FocusStyle = 'underline' | 'highlight' | 'blur' | 'ruler';
 export type FocusColor = string;
 export type HighlightMode = 'line' | 'sentence';
 
