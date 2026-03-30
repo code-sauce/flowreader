@@ -108,7 +108,17 @@ export function mountReader(
   let state = createReaderState(words, wpm, position, mode);
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let controlsTimer: ReturnType<typeof setTimeout> | null = null;
-  let hasStarted = false; // don't show pause pulse until user has played at least once
+  let hasStarted = false;
+  let annotationMap: Map<number, Annotation> = new Map(); // word position -> annotation
+
+  async function loadAnnotations(): Promise<void> {
+    const anns = await storage.getAnnotations(articleId);
+    annotationMap = new Map();
+    for (const a of anns) annotationMap.set(a.position, a);
+  }
+
+  // Load initially
+  loadAnnotations();
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
   container.innerHTML = `
@@ -176,6 +186,15 @@ export function mountReader(
     scrollToFocus();
     savePosition();
   }) as EventListener);
+
+  // Refresh annotation markers when annotations change
+  window.addEventListener('annotations-changed', () => {
+    loadAnnotations().then(() => {
+      // Force rebuild to show new markers
+      renderedStart = -1;
+      renderGradient();
+    });
+  });
 
   const wpmLabel = container.querySelector('#reader-wpm') as HTMLElement;
   const slider = container.querySelector('#reader-slider') as HTMLInputElement;
@@ -250,6 +269,11 @@ export function mountReader(
       if (i > renderedStart) frag.appendChild(document.createTextNode(' '));
       const span = document.createElement('span');
       span.className = 'gw';
+      const ann = annotationMap.get(i);
+      if (ann) {
+        span.classList.add(ann.type === 'bookmark' ? 'gw-bookmark' : 'gw-note');
+        span.title = ann.text || '';
+      }
       span.textContent = state.words[i];
       wordElements.push(span);
       frag.appendChild(span);
