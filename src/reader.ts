@@ -518,6 +518,7 @@ export function mountReader(
     if (state.position >= state.words.length) return;
     state.playing = true;
     hasStarted = true;
+    gradientEl.classList.remove('no-transition');
     showControls();
     showToast('▶');
     step();
@@ -726,15 +727,10 @@ export function mountReader(
   });
   observer.observe(document.body, { childList: true, subtree: true });
 
-  // Suppress transitions on initial render to prevent flash
+  // Suppress transitions until first play
   gradientEl.classList.add('no-transition');
   applyModeVisibility();
   renderWord();
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      gradientEl.classList.remove('no-transition');
-    });
-  });
 
   // Auto-play after 500ms
   setTimeout(() => play(), 500);
