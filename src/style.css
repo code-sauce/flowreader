@@ -582,9 +582,8 @@ html, body {
   color: #444;
 }
 
-.reader-gradient.no-transition .gw,
-.reader-gradient.no-transition .gw-line,
-.reader-gradient.no-transition .gw-focus {
+.reader-gradient.no-transition,
+.reader-gradient.no-transition * {
   transition: none !important;
   animation: none !important;
 }
