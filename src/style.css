@@ -913,6 +913,14 @@ html, body {
   color: var(--text);
 }
 
+.home-note {
+  font-size: 11px;
+  color: #444;
+  margin-top: 8px;
+  text-align: center;
+  max-width: 560px;
+}
+
 /* ===== Mobile ===== */
 
 @media (max-width: 768px) {

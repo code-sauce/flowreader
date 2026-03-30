@@ -94,6 +94,7 @@ export async function mountInput(container: HTMLElement): Promise<void> {
         </div>
       </div>
       <div class="home-tagline">Paste text, a URL, or drop a file. Press <strong>&#8984;+Enter</strong> to start.</div>
+      <div class="home-note">URLs work best with blogs and articles. Dynamic or paywalled sites may load partially -- paste the text directly instead.</div>
       <div id="home-drop-hint" class="home-drop-hint">Drop a file anywhere</div>
     </div>
   `;
