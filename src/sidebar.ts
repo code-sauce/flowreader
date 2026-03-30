@@ -1,5 +1,5 @@
 import { storage, Article } from './storage';
-import { ThemeSettings, ThemeName, FontFamily, FocusStyle, saveSettings } from './theme';
+import { ThemeSettings, ThemeName, FontFamily, FocusStyle, HighlightMode, saveSettings } from './theme';
 
 function formatDate(ts: number): string {
   return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -75,6 +75,13 @@ function renderSettings(settings: ThemeSettings): string {
             ${focusBtn('underline', 'Underline')}
             ${focusBtn('highlight', 'Highlight')}
             ${focusBtn('blur', 'Blur')}
+          </div>
+        </div>
+        <div class="setting-group">
+          <div class="setting-label">Highlight</div>
+          <div class="setting-row">
+            <button class="hl-btn ${settings.highlightMode === 'line' ? 'active' : ''}" data-hl="line">Line</button>
+            <button class="hl-btn ${settings.highlightMode === 'sentence' ? 'active' : ''}" data-hl="sentence">Sentence</button>
           </div>
         </div>
         <div class="setting-group">
@@ -192,6 +199,17 @@ export async function mountSidebar(
     btn.addEventListener('click', () => {
       const wpm = Number((btn as HTMLElement).dataset.wpm);
       window.dispatchEvent(new CustomEvent('set-wpm', { detail: wpm }));
+    });
+  });
+
+  // Highlight mode buttons
+  container.querySelectorAll('.hl-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentSettings.highlightMode = (btn as HTMLElement).dataset.hl as HighlightMode;
+      container.querySelectorAll('.hl-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      saveSettings(currentSettings);
+      onSettingsChange(currentSettings);
     });
   });
 

@@ -5,6 +5,7 @@ export type FontFamily = 'mono' | 'sans' | 'serif';
 
 export type FocusStyle = 'underline' | 'highlight' | 'blur';
 export type FocusColor = string;
+export type HighlightMode = 'line' | 'sentence';
 
 export interface ThemeSettings {
   theme: ThemeName;
@@ -15,6 +16,7 @@ export interface ThemeSettings {
   pageWidth: number;
   focusStyle: FocusStyle;
   focusColor: FocusColor;
+  highlightMode: HighlightMode;
 }
 
 export const DEFAULT_SETTINGS: ThemeSettings = {
@@ -26,6 +28,7 @@ export const DEFAULT_SETTINGS: ThemeSettings = {
   pageWidth: 680,
   focusStyle: 'underline',
   focusColor: '#e74c3c',
+  highlightMode: 'line',
 };
 
 const THEME_COLORS: Record<ThemeName, Record<string, string>> = {

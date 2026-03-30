@@ -1,6 +1,6 @@
 import { getOrpIndex } from './orp';
 import { storage } from './storage';
-import { FocusStyle } from './theme';
+import { FocusStyle, HighlightMode } from './theme';
 
 export type ReadingMode = 'rsvp' | 'gradient';
 
@@ -141,19 +141,23 @@ export function mountReader(
   const rsvpWordEl = container.querySelector('.reader-word') as HTMLElement;
   const gradientEl = container.querySelector('.reader-gradient') as HTMLElement;
 
-  // Apply focus style from settings
-  function applyFocusStyle(focusStyle?: FocusStyle): void {
+  // Apply focus style and highlight mode from settings
+  let currentHighlightMode: HighlightMode = 'line';
+
+  function applySettings(focusStyle?: FocusStyle, hlMode?: HighlightMode): void {
     gradientEl.dataset.focus = focusStyle || 'underline';
+    currentHighlightMode = hlMode || 'line';
   }
 
   storage.getSetting('themeSettings').then((saved: unknown) => {
-    const s = saved as { focusStyle?: FocusStyle } | undefined;
-    applyFocusStyle(s?.focusStyle);
+    const s = saved as { focusStyle?: FocusStyle; highlightMode?: HighlightMode } | undefined;
+    applySettings(s?.focusStyle, s?.highlightMode);
   });
 
   // Listen for live settings changes
   window.addEventListener('theme-changed', ((e: CustomEvent) => {
-    applyFocusStyle(e.detail?.focusStyle);
+    applySettings(e.detail?.focusStyle, e.detail?.highlightMode);
+    renderGradient(); // re-render to apply new highlight mode
   }) as EventListener);
 
   // Listen for pace preset changes
@@ -301,23 +305,39 @@ export function mountReader(
     const idx = state.position - renderedStart;
     const el = wordElements[idx];
     if (el) {
-      // Find current sentence boundaries
-      const [sentStart, sentEnd] = findSentenceBounds(state.words, state.position);
-
       prevLineEls = [];
       prevNearEls = [];
 
-      // Highlight current sentence + nearby context when paused
-      for (let i = 0; i < wordElements.length; i++) {
-        const wordIdx = renderedStart + i;
-        const w = wordElements[i];
-        if (wordIdx >= sentStart && wordIdx <= sentEnd) {
-          w.classList.add('gw-line');
-          prevLineEls.push(w);
-        } else if (!state.playing) {
-          // When paused, show adjacent sentences dimly
-          const dist = wordIdx < sentStart ? sentStart - wordIdx : wordIdx - sentEnd;
-          if (dist <= 30) {
+      if (currentHighlightMode === 'sentence') {
+        // Sentence mode: highlight full sentence
+        const [sentStart, sentEnd] = findSentenceBounds(state.words, state.position);
+        for (let i = 0; i < wordElements.length; i++) {
+          const wordIdx = renderedStart + i;
+          const w = wordElements[i];
+          if (wordIdx >= sentStart && wordIdx <= sentEnd) {
+            w.classList.add('gw-line');
+            prevLineEls.push(w);
+          } else if (!state.playing) {
+            const dist = wordIdx < sentStart ? sentStart - wordIdx : wordIdx - sentEnd;
+            if (dist <= 30) {
+              w.classList.add('gw-near');
+              prevNearEls.push(w);
+            }
+          }
+        }
+      } else {
+        // Line mode (default): highlight words on the same visual line
+        const lineTop = el.offsetTop;
+        const lineTops = [...new Set(wordElements.map(w => w.offsetTop))].sort((a, b) => a - b);
+        const currentLineIdx = lineTops.findIndex(t => Math.abs(t - lineTop) < 2);
+
+        for (const w of wordElements) {
+          const wLineIdx = lineTops.findIndex(t => Math.abs(t - w.offsetTop) < 2);
+          const dist = Math.abs(wLineIdx - currentLineIdx);
+          if (dist === 0) {
+            w.classList.add('gw-line');
+            prevLineEls.push(w);
+          } else if (!state.playing && dist <= 3) {
             w.classList.add('gw-near');
             prevNearEls.push(w);
           }
