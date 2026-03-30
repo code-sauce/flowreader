@@ -192,6 +192,7 @@ export function mountReader(
   let renderedEnd = 0;
   const WINDOW_SIZE = 500;
   const REBUILD_MARGIN = 150;
+  let userScrollUntil = 0; // timestamp: suppress auto-scroll until this time
 
   function scrollLoop(): void {
     if (gradientEl.offsetParent === null) {
@@ -199,8 +200,8 @@ export function mountReader(
       return;
     }
 
-    // Keep focused word near vertical center while playing
-    if (prevFocusEl && state.playing) {
+    // Keep focused word near vertical center (unless user recently scrolled)
+    if (prevFocusEl && state.playing && Date.now() > userScrollUntil) {
       const containerRect = gradientEl.getBoundingClientRect();
       const elRect = prevFocusEl.getBoundingClientRect();
       const centerY = containerRect.top + containerRect.height * 0.45;
@@ -556,6 +557,11 @@ export function mountReader(
   container.addEventListener('mousemove', () => showControls());
 
   gradientEl.addEventListener('scroll', onManualScroll);
+
+  // Mouse wheel: always allow, suppress auto-scroll briefly so it doesn't fight
+  gradientEl.addEventListener('wheel', () => {
+    userScrollUntil = Date.now() + 2000; // suppress auto-scroll for 2s after last wheel
+  }, { passive: true });
 
   // Scrub bar: click or drag to jump to any position
   function scrubTo(clientX: number): void {
