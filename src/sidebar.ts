@@ -75,6 +75,8 @@ function renderSettings(settings: ThemeSettings): string {
             ${focusBtn('underline', 'Underline')}
             ${focusBtn('highlight', 'Highlight')}
             ${focusBtn('blur', 'Blur')}
+            ${focusBtn('ruler', 'Ruler')}
+            ${focusBtn('beeline', 'BeeLine')}
           </div>
         </div>
         <div class="setting-group">

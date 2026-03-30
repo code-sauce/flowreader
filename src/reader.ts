@@ -143,10 +143,72 @@ export function mountReader(
 
   // Apply focus style and highlight mode from settings
   let currentHighlightMode: HighlightMode = 'line';
+  let currentFocusStyle: FocusStyle = 'underline';
+
+  // BeeLine color pairs: end of line N matches start of line N+1
+  const BEELINE_COLORS = [
+    ['#5B8DEF', '#E85D75'],  // blue -> rose
+    ['#E85D75', '#4EC9B0'],  // rose -> teal
+    ['#4EC9B0', '#D4A843'],  // teal -> gold
+    ['#D4A843', '#5B8DEF'],  // gold -> blue (cycles)
+  ];
+
+  function applyBeelineColors(): void {
+    if (currentFocusStyle !== 'beeline' || wordElements.length === 0) return;
+
+    // Group words by visual line
+    const lines: HTMLElement[][] = [];
+    let currentLine: HTMLElement[] = [];
+    let lastTop = -1;
+    for (const w of wordElements) {
+      if (lastTop >= 0 && Math.abs(w.offsetTop - lastTop) > 2) {
+        lines.push(currentLine);
+        currentLine = [];
+      }
+      currentLine.push(w);
+      lastTop = w.offsetTop;
+    }
+    if (currentLine.length) lines.push(currentLine);
+
+    // Apply gradient colors per line
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+      const pair = BEELINE_COLORS[lineIdx % BEELINE_COLORS.length];
+      const lineWords = lines[lineIdx];
+      for (let wi = 0; wi < lineWords.length; wi++) {
+        const t = lineWords.length > 1 ? wi / (lineWords.length - 1) : 0;
+        // Interpolate between pair[0] and pair[1]
+        const c0 = hexToRgb(pair[0]);
+        const c1 = hexToRgb(pair[1]);
+        const r = Math.round(c0[0] + (c1[0] - c0[0]) * t);
+        const g = Math.round(c0[1] + (c1[1] - c0[1]) * t);
+        const b = Math.round(c0[2] + (c1[2] - c0[2]) * t);
+        lineWords[wi].style.color = `rgb(${r},${g},${b})`;
+      }
+    }
+  }
+
+  function clearBeelineColors(): void {
+    for (const w of wordElements) {
+      w.style.color = '';
+    }
+  }
+
+  function hexToRgb(hex: string): [number, number, number] {
+    const n = parseInt(hex.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
 
   function applySettings(focusStyle?: FocusStyle, hlMode?: HighlightMode): void {
-    gradientEl.dataset.focus = focusStyle || 'underline';
+    const newStyle = focusStyle || 'underline';
+    if (currentFocusStyle === 'beeline' && newStyle !== 'beeline') {
+      clearBeelineColors();
+    }
+    currentFocusStyle = newStyle;
+    gradientEl.dataset.focus = newStyle;
     currentHighlightMode = hlMode || 'line';
+    if (newStyle === 'beeline') {
+      requestAnimationFrame(applyBeelineColors);
+    }
   }
 
   storage.getSetting('themeSettings').then((saved: unknown) => {
@@ -258,6 +320,11 @@ export function mountReader(
         const elTop = newEl.offsetTop - gradientEl.offsetTop;
         gradientEl.scrollTop = Math.max(0, elTop - gradientEl.clientHeight * 0.45);
       }
+    }
+
+    // Apply beeline colors after layout
+    if (currentFocusStyle === 'beeline') {
+      requestAnimationFrame(applyBeelineColors);
     }
   }
 

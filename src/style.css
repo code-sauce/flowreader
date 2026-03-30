@@ -553,6 +553,43 @@ html, body {
   animation: pulse 2s ease-in-out infinite;
 }
 
+/* Focus styles: ruler (reading window -- dim everything outside) */
+.reader-gradient[data-focus="ruler"] .gw {
+  opacity: 0.1;
+  transition: opacity 0.15s ease;
+}
+
+.reader-gradient[data-focus="ruler"] .gw-line {
+  opacity: 1;
+}
+
+.reader-gradient[data-focus="ruler"] .gw-near {
+  opacity: 0.15;
+}
+
+.reader-gradient[data-focus="ruler"] .gw-focus {
+  opacity: 1;
+}
+
+/* Focus styles: beeline (color gradient per line -- colors applied via JS) */
+.reader-gradient[data-focus="beeline"] .gw {
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
+}
+
+.reader-gradient[data-focus="beeline"] .gw-line {
+  opacity: 1;
+}
+
+.reader-gradient[data-focus="beeline"] .gw-near {
+  opacity: 0.5;
+}
+
+.reader-gradient[data-focus="beeline"] .gw-focus {
+  opacity: 1;
+  font-weight: 600;
+}
+
 /* Bottom bar (scrub + controls) */
 
 #reader-bottom-bar {
