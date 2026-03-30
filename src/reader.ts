@@ -178,13 +178,16 @@ export function mountReader(
     updateWpm(e.detail as number);
   }) as EventListener);
 
-  // Listen for jump-to from annotations
+  // Listen for jump-to from annotations -- save previous position for "back"
+  let previousPosition: number | null = null;
+
   window.addEventListener('jump-to', ((e: CustomEvent) => {
     if (state.playing) pause();
+    previousPosition = state.position;
     state.position = e.detail as number;
     renderWord();
     scrollToFocus();
-    savePosition();
+    showToast('Press Backspace to return');
   }) as EventListener);
 
   // Refresh annotation markers when annotations change
@@ -621,6 +624,16 @@ export function mountReader(
       case 'B':
         e.preventDefault();
         addBookmark();
+        break;
+      case 'Backspace':
+        e.preventDefault();
+        if (previousPosition !== null) {
+          state.position = previousPosition;
+          previousPosition = null;
+          renderWord();
+          scrollToFocus();
+          showToast('Back');
+        }
         break;
     }
   }
