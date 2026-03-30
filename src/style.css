@@ -582,6 +582,13 @@ html, body {
   color: #444;
 }
 
+.reader-gradient.no-transition .gw,
+.reader-gradient.no-transition .gw-line,
+.reader-gradient.no-transition .gw-focus {
+  transition: none !important;
+  animation: none !important;
+}
+
 .gw-bookmark {
   border-bottom: 2px solid #f39c12;
   background: rgba(243, 156, 18, 0.1);

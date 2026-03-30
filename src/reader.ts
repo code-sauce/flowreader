@@ -726,8 +726,15 @@ export function mountReader(
   });
   observer.observe(document.body, { childList: true, subtree: true });
 
+  // Suppress transitions on initial render to prevent flash
+  gradientEl.classList.add('no-transition');
   applyModeVisibility();
   renderWord();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      gradientEl.classList.remove('no-transition');
+    });
+  });
 
   // Auto-play after 500ms
   setTimeout(() => play(), 500);
