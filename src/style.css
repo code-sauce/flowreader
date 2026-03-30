@@ -606,7 +606,9 @@ html, body {
   filter: blur(0.8px);
 }
 
-.reader-gradient[data-focus="blur"] .gw-focus {
+.reader-gradient[data-focus="blur"] .gw-focus,
+.reader-gradient[data-focus="blur"] .gw-bookmark,
+.reader-gradient[data-focus="blur"] .gw-note {
   filter: none;
 }
 
@@ -628,7 +630,9 @@ html, body {
   opacity: 0.15;
 }
 
-.reader-gradient[data-focus="ruler"] .gw-focus {
+.reader-gradient[data-focus="ruler"] .gw-focus,
+.reader-gradient[data-focus="ruler"] .gw-bookmark,
+.reader-gradient[data-focus="ruler"] .gw-note {
   opacity: 1;
 }
 
