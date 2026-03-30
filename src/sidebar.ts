@@ -41,7 +41,11 @@ function renderSettings(settings: ThemeSettings): string {
     return `<button class="focus-btn ${active}" data-focus="${name}">${label}</button>`;
   }
 
-  const FOCUS_COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'];
+  const FOCUS_COLORS = [
+    '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c',
+    '#888888', '#a0a0a0', '#c4b5a0',
+    '#d4a5a5', '#a5b8d4', '#a5d4b8', '#d4cfa5', '#c5a5d4', '#a5d4d0',
+  ];
   function colorDot(color: string): string {
     const active = settings.focusColor === color ? 'active' : '';
     return `<button class="color-dot ${active}" data-color="${color}" style="background:${color}"></button>`;
