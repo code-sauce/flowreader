@@ -7,8 +7,8 @@ export async function mountInput(container: HTMLElement): Promise<void> {
       <div class="input-area">
         <textarea
           id="home-textarea"
-          placeholder="Paste text here and press ⌘+Enter to start reading..."
-          rows="6"
+          placeholder="Paste text or drop a file..."
+          rows="5"
         ></textarea>
         <div class="input-actions">
           <label class="home-file-btn">
@@ -18,6 +18,33 @@ export async function mountInput(container: HTMLElement): Promise<void> {
           <button id="home-read-btn">Read</button>
         </div>
       </div>
+      <div class="home-features">
+        <div class="feature">
+          <div class="feature-key">Space</div>
+          <div class="feature-desc">Play / pause</div>
+        </div>
+        <div class="feature">
+          <div class="feature-key">&uarr; &darr;</div>
+          <div class="feature-desc">Reading speed</div>
+        </div>
+        <div class="feature">
+          <div class="feature-key">&larr; &rarr;</div>
+          <div class="feature-desc">Skip sentences</div>
+        </div>
+        <div class="feature">
+          <div class="feature-key">M</div>
+          <div class="feature-desc">RSVP / Page mode</div>
+        </div>
+        <div class="feature">
+          <div class="feature-key">L</div>
+          <div class="feature-desc">Library &amp; settings</div>
+        </div>
+        <div class="feature">
+          <div class="feature-key">Esc</div>
+          <div class="feature-desc">Exit reader</div>
+        </div>
+      </div>
+      <div class="home-tagline">Paste text, drop a file, or pick from your library. Press <strong>&#8984;+Enter</strong> to start.</div>
       <div id="home-drop-hint" class="home-drop-hint">Drop a file anywhere</div>
     </div>
   `;

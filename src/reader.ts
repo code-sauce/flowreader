@@ -141,6 +141,7 @@ export function mountReader(
   const wpmLabel = container.querySelector('#reader-wpm') as HTMLElement;
   const slider = container.querySelector('#reader-slider') as HTMLInputElement;
   const controls = container.querySelector('#reader-controls') as HTMLElement;
+  const bottomBar = container.querySelector('#reader-bottom-bar') as HTMLElement;
   const scrubBar = container.querySelector('#reader-scrub') as HTMLElement;
   const scrubFill = container.querySelector('#reader-scrub-fill') as HTMLElement;
   const scrubHandle = container.querySelector('#reader-scrub-handle') as HTMLElement;
@@ -374,11 +375,15 @@ export function mountReader(
   }
 
   function showControls(): void {
+    bottomBar.classList.add('visible');
     controls.classList.remove('hidden');
     if (controlsTimer) clearTimeout(controlsTimer);
-    if (state.playing) {
-      controlsTimer = setTimeout(() => controls.classList.add('hidden'), 2000);
-    }
+    controlsTimer = setTimeout(() => {
+      if (state.playing) {
+        bottomBar.classList.remove('visible');
+        controls.classList.add('hidden');
+      }
+    }, 2000);
   }
 
   function updateWpm(newWpm: number): void {
@@ -522,6 +527,9 @@ export function mountReader(
   display.addEventListener('click', () => {
     state.playing ? pause() : play();
   });
+
+  // Show bottom bar on mouse move, hide after timeout
+  container.addEventListener('mousemove', () => showControls());
 
   gradientEl.addEventListener('scroll', onManualScroll);
 

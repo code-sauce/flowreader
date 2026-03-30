@@ -525,6 +525,14 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+#reader-bottom-bar.visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* Scrub bar */
@@ -739,6 +747,48 @@ html, body {
 
 .home-drop-hint.visible {
   opacity: 1;
+}
+
+/* Features grid */
+
+.home-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 560px;
+  margin-top: 32px;
+}
+
+.feature {
+  text-align: center;
+  padding: 12px 8px;
+  background: var(--bg-surface);
+  border-radius: 8px;
+  border: 1px solid #222;
+}
+
+.feature-key {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text-bright);
+  margin-bottom: 4px;
+}
+
+.feature-desc {
+  font-size: 11px;
+  color: #555;
+}
+
+.home-tagline {
+  font-size: 13px;
+  color: #555;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.home-tagline strong {
+  color: var(--text);
 }
 
 /* ===== Mobile ===== */
