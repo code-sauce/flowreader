@@ -1,5 +1,34 @@
 import { storage, Article } from './storage';
 import { parseText, parseFile, extractTitle } from './parser';
+import { Readability } from '@mozilla/readability';
+
+function isUrl(text: string): boolean {
+  try {
+    const url = new URL(text);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+async function fetchArticle(url: string): Promise<{ title: string; text: string } | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const html = await response.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    // Fix relative URLs for images etc
+    const base = doc.createElement('base');
+    base.href = url;
+    doc.head.prepend(base);
+    const article = new Readability(doc).parse();
+    if (!article || !article.textContent?.trim()) return null;
+    return { title: article.title || url, text: article.textContent };
+  } catch (err) {
+    console.error('Failed to fetch URL:', err);
+    return null;
+  }
+}
 
 export async function mountInput(container: HTMLElement): Promise<void> {
   container.innerHTML = `
@@ -7,7 +36,7 @@ export async function mountInput(container: HTMLElement): Promise<void> {
       <div class="input-area">
         <textarea
           id="home-textarea"
-          placeholder="Paste text or drop a file..."
+          placeholder="Paste text, a URL, or drop a file..."
           rows="5"
         ></textarea>
         <div class="input-actions">
@@ -48,7 +77,7 @@ export async function mountInput(container: HTMLElement): Promise<void> {
           <div class="feature-desc">Exit reader</div>
         </div>
       </div>
-      <div class="home-tagline">Paste text, drop a file, or pick from your library. Press <strong>&#8984;+Enter</strong> to start.</div>
+      <div class="home-tagline">Paste text, a URL, or drop a file. Press <strong>&#8984;+Enter</strong> to start.</div>
       <div id="home-drop-hint" class="home-drop-hint">Drop a file anywhere</div>
     </div>
   `;
@@ -80,16 +109,33 @@ export async function mountInput(container: HTMLElement): Promise<void> {
     }));
   }
 
-  readBtn.addEventListener('click', () => {
+  async function handleInput(): Promise<void> {
     const text = textarea.value.trim();
-    if (text) startReading(text, 'Pasted text');
-  });
+    if (!text) return;
+
+    if (isUrl(text)) {
+      readBtn.textContent = 'Loading...';
+      readBtn.setAttribute('disabled', '');
+      const article = await fetchArticle(text);
+      readBtn.textContent = 'Read';
+      readBtn.removeAttribute('disabled');
+      if (article) {
+        startReading(article.text, text);
+      } else {
+        textarea.value = '';
+        textarea.placeholder = 'Could not extract text from that URL. Try pasting the text directly.';
+      }
+    } else {
+      startReading(text, 'Pasted text');
+    }
+  }
+
+  readBtn.addEventListener('click', handleInput);
 
   textarea.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
-      const text = textarea.value.trim();
-      if (text) startReading(text, 'Pasted text');
+      handleInput();
     }
   });
 
