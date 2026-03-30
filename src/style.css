@@ -493,6 +493,42 @@ html, body {
   font-weight: bold;
 }
 
+/* Mode toggle (top-left, always visible) */
+
+.reader-mode-toggle {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  gap: 2px;
+  background: var(--bg-surface);
+  border-radius: 6px;
+  padding: 2px;
+  border: 1px solid #222;
+  z-index: 20;
+}
+
+.mode-tab {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #555;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+.mode-tab:hover {
+  color: var(--text-bright);
+}
+
+.mode-tab.active {
+  color: var(--text-bright);
+  background: var(--bg-hover);
+}
+
 /* Toast */
 
 .reader-toast {
@@ -873,6 +909,35 @@ html, body {
   opacity: 1;
 }
 
+.home-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 560px;
+  margin-top: 20px;
+}
+
+.feature {
+  text-align: center;
+  padding: 10px 6px;
+  background: var(--bg-surface);
+  border-radius: 6px;
+  border: 1px solid #222;
+}
+
+.feature-key {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-bright);
+  margin-bottom: 3px;
+}
+
+.feature-desc {
+  font-size: 11px;
+  color: #555;
+}
+
 .home-tagline {
   font-size: 13px;
   color: #555;
@@ -929,53 +994,6 @@ html, body {
 .home-refs a:hover {
   color: var(--text-bright);
   text-decoration: underline;
-}
-
-/* Mode cards */
-
-.home-modes {
-  display: flex;
-  gap: 12px;
-  max-width: 560px;
-  margin-top: 24px;
-}
-
-.home-mode {
-  flex: 1;
-  padding: 14px;
-  background: var(--bg-surface);
-  border: 1px solid #222;
-  border-radius: 8px;
-}
-
-.home-mode-title {
-  font-size: 13px;
-  color: var(--text-bright);
-  font-weight: 500;
-  margin-bottom: 6px;
-}
-
-.home-mode-desc {
-  font-size: 12px;
-  color: #555;
-  line-height: 1.6;
-}
-
-/* Compact shortcuts */
-
-.home-shortcuts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  max-width: 560px;
-  margin-top: 20px;
-  justify-content: center;
-}
-
-.home-shortcuts span {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: #444;
 }
 
 /* ===== Mobile ===== */

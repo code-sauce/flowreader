@@ -129,6 +129,10 @@ export function mountReader(
         </div>
         <div class="reader-gradient" style="display:none"></div>
       </div>
+      <div id="reader-mode-toggle" class="reader-mode-toggle">
+        <button id="mode-rsvp" class="mode-tab ${state.mode === 'rsvp' ? 'active' : ''}">RSVP</button>
+        <button id="mode-page" class="mode-tab ${state.mode === 'gradient' ? 'active' : ''}">Page</button>
+      </div>
       <div id="reader-toast" class="reader-toast"></div>
       <div id="reader-bottom-bar">
         <div id="reader-scrub">
@@ -456,7 +460,11 @@ export function mountReader(
     applyModeVisibility();
     renderWord();
     storage.setSetting('readingMode', state.mode);
-    showToast(state.mode === 'rsvp' ? 'RSVP' : 'Page');
+    // Update mode tabs
+    const rsvpTab = container.querySelector('#mode-rsvp');
+    const pageTab = container.querySelector('#mode-page');
+    rsvpTab?.classList.toggle('active', state.mode === 'rsvp');
+    pageTab?.classList.toggle('active', state.mode === 'gradient');
   }
 
   function savePosition(): void {
@@ -645,6 +653,14 @@ export function mountReader(
   modeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     toggleMode();
+  });
+
+  const modeToggle = container.querySelector('#reader-mode-toggle')!;
+  modeToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const target = e.target as HTMLElement;
+    if (target.id === 'mode-rsvp' && state.mode !== 'rsvp') toggleMode();
+    if (target.id === 'mode-page' && state.mode !== 'gradient') toggleMode();
   });
 
   const display = container.querySelector('#reader-display') as HTMLElement;

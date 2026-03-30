@@ -83,35 +83,40 @@ export async function mountInput(container: HTMLElement): Promise<void> {
         </div>
       </div>
       <div class="home-why">
-        <div class="home-why-title">Why guided reading works</div>
-        <p>Most people lose focus not because text is hard, but because nothing guides their attention through it. RSVP (Rapid Serial Visual Presentation) eliminates the effort of tracking lines and managing eye movement -- your only job is to watch.</p>
-        <p>Research shows this is especially effective for ADHD readers, who often struggle with sustained attention on static pages but lock in when the pacing is controlled externally.</p>
+        <p>Guided reading eliminates the effort of tracking lines. Especially effective for ADHD readers.</p>
         <div class="home-refs">
-          <a href="https://pubmed.ncbi.nlm.nih.gov/29461715/" target="_blank" rel="noopener">Speed-reading apps and comprehension (2018)</a>
-          <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7464337/" target="_blank" rel="noopener">Visual attention training improves reading (2020)</a>
-          <a href="https://www.researchgate.net/publication/346056335" target="_blank" rel="noopener">Improving RSVP by considering text complexity</a>
+          <a href="https://pubmed.ncbi.nlm.nih.gov/29461715/" target="_blank" rel="noopener">Research: speed-reading &amp; comprehension</a>
+          <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7464337/" target="_blank" rel="noopener">Research: visual attention &amp; reading</a>
         </div>
       </div>
-      <div class="home-modes">
-        <div class="home-mode">
-          <div class="home-mode-title">RSVP mode</div>
-          <div class="home-mode-desc">One word at a time, center screen. The ORP (Optimal Recognition Point) letter is highlighted to anchor your eye. Controls disappear while you read.</div>
+      <div class="home-features">
+        <div class="feature">
+          <div class="feature-key">Space</div>
+          <div class="feature-desc">Play / pause</div>
         </div>
-        <div class="home-mode">
-          <div class="home-mode-title">Page mode</div>
-          <div class="home-mode-desc">Full text with guided highlighting. The current line or sentence lights up as you read. Choose underline, highlight, blur, or ruler focus styles.</div>
+        <div class="feature">
+          <div class="feature-key">&uarr; &darr;</div>
+          <div class="feature-desc">Speed</div>
         </div>
-      </div>
-      <div class="home-shortcuts">
-        <span>Space: play/pause</span>
-        <span>&uarr;&darr;: speed</span>
-        <span>&larr;&rarr;: skip</span>
-        <span>M: mode</span>
-        <span>L: sidebar</span>
-        <span>B: bookmark</span>
+        <div class="feature">
+          <div class="feature-key">&larr; &rarr;</div>
+          <div class="feature-desc">Skip</div>
+        </div>
+        <div class="feature">
+          <div class="feature-key">M</div>
+          <div class="feature-desc">RSVP / Page</div>
+        </div>
+        <div class="feature">
+          <div class="feature-key">L</div>
+          <div class="feature-desc">Sidebar</div>
+        </div>
+        <div class="feature">
+          <div class="feature-key">B</div>
+          <div class="feature-desc">Bookmark</div>
+        </div>
       </div>
       <div class="home-tagline">Paste text, a URL, or drop a file. Press <strong>&#8984;+Enter</strong> to start.</div>
-      <div class="home-note">URLs work best with blogs and articles. Dynamic or paywalled sites may load partially -- paste the text directly instead.</div>
+      <div class="home-note">URLs work best with blogs and articles. Dynamic or paywalled sites may load partially.</div>
       <div id="home-drop-hint" class="home-drop-hint">Drop a file anywhere</div>
     </div>
   `;
