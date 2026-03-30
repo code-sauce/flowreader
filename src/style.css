@@ -515,77 +515,26 @@ html, body {
   animation: pulse 2s ease-in-out infinite;
 }
 
-/* Controls */
+/* Bottom bar (scrub + controls) */
 
-#reader-controls {
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
+#reader-bottom-bar {
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border-top: 1px solid #222;
+  padding: 8px 16px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  transition: opacity 0.5s ease;
-  opacity: 1;
-}
-
-#reader-controls.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.reader-controls-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-#reader-wpm {
-  font-family: var(--font-mono);
-  font-size: 14px;
-  color: var(--text);
-}
-
-.reader-mode-btn {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text);
-  background: var(--bg-surface);
-  border: 1px solid #333;
-  border-radius: 4px;
-  padding: 4px 10px;
-  cursor: pointer;
-  transition: border-color 0.2s;
-}
-
-.reader-mode-btn:hover {
-  border-color: var(--accent);
-  color: var(--text-bright);
-}
-
-#reader-slider {
-  width: 200px;
-  accent-color: var(--accent);
-}
-
-.reader-hint {
-  font-size: 12px;
-  color: #555;
+  gap: 6px;
 }
 
 /* Scrub bar */
 
 #reader-scrub {
-  position: absolute;
-  bottom: 12px;
-  left: 24px;
-  right: 24px;
-  height: 20px;
+  position: relative;
+  height: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  z-index: 10;
 }
 
 #reader-scrub::before {
@@ -614,8 +563,8 @@ html, body {
 
 #reader-scrub-handle {
   position: absolute;
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
   background: var(--focus-color, var(--accent));
   border-radius: 50%;
   top: 50%;
@@ -626,19 +575,19 @@ html, body {
 
 #reader-scrub-handle:active {
   cursor: grabbing;
-  transform: translate(-50%, -50%) scale(1.2);
+  transform: translate(-50%, -50%) scale(1.3);
 }
 
 .reader-scrub-label {
   position: absolute;
-  top: -28px;
+  top: -24px;
   transform: translateX(-50%);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-bright);
-  background: var(--bg-surface);
-  padding: 2px 8px;
-  border-radius: 4px;
+  background: var(--bg);
+  padding: 2px 6px;
+  border-radius: 3px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s;
@@ -646,6 +595,52 @@ html, body {
 
 .reader-scrub-label.visible {
   opacity: 1;
+}
+
+/* Controls row */
+
+#reader-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: opacity 0.5s ease;
+  opacity: 1;
+}
+
+#reader-controls.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#reader-wpm {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #555;
+  min-width: 28px;
+}
+
+#reader-slider {
+  flex: 1;
+  max-width: 120px;
+  height: 3px;
+  accent-color: var(--accent);
+}
+
+.reader-mode-btn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #555;
+  background: none;
+  border: 1px solid #333;
+  border-radius: 3px;
+  padding: 2px 8px;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.reader-mode-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-bright);
 }
 
 /* ===== Input View ===== */

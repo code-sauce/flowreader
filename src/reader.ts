@@ -102,18 +102,17 @@ export function mountReader(
         <div class="reader-gradient" style="display:none"></div>
       </div>
       <div id="reader-toast" class="reader-toast"></div>
-      <div id="reader-controls">
-        <div class="reader-controls-row">
-          <div id="reader-wpm">${state.wpm} WPM</div>
+      <div id="reader-bottom-bar">
+        <div id="reader-scrub">
+          <div id="reader-scrub-fill" style="width: 0%"></div>
+          <div id="reader-scrub-handle" style="left: 0%"></div>
+          <div id="reader-scrub-label" class="reader-scrub-label"></div>
+        </div>
+        <div id="reader-controls">
+          <div id="reader-wpm">${state.wpm}</div>
+          <input type="range" id="reader-slider" min="100" max="1000" step="25" value="${state.wpm}" />
           <button id="reader-mode-btn" class="reader-mode-btn">${state.mode === 'rsvp' ? 'RSVP' : 'Page'}</button>
         </div>
-        <input type="range" id="reader-slider" min="100" max="1000" step="25" value="${state.wpm}" />
-        <div class="reader-hint">Space: play/pause · ↑↓: speed · ←→: skip · M: mode · Esc: exit</div>
-      </div>
-      <div id="reader-scrub">
-        <div id="reader-scrub-fill" style="width: 0%"></div>
-        <div id="reader-scrub-handle" style="left: 0%"></div>
-        <div id="reader-scrub-label" class="reader-scrub-label"></div>
       </div>
     </div>
   `;
