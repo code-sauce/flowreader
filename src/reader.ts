@@ -242,8 +242,8 @@ export function mountReader(
       return;
     }
 
-    // Keep focused word near vertical center (unless user recently scrolled)
-    if (prevFocusEl && state.playing && Date.now() > userScrollUntil) {
+    // Keep focused word near vertical center (only while playing, not on initial load)
+    if (prevFocusEl && state.playing && hasStarted && Date.now() > userScrollUntil) {
       const containerRect = gradientEl.getBoundingClientRect();
       const elRect = prevFocusEl.getBoundingClientRect();
       const centerY = containerRect.top + containerRect.height * 0.45;
@@ -385,7 +385,7 @@ export function mountReader(
           if (dist === 0) {
             w.classList.add('gw-line');
             prevLineEls.push(w);
-          } else if (!state.playing && dist <= 3) {
+          } else if (hasStarted && !state.playing && dist <= 3) {
             w.classList.add('gw-near');
             prevNearEls.push(w);
           }
