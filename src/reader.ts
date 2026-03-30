@@ -110,8 +110,10 @@ export function mountReader(
         <input type="range" id="reader-slider" min="100" max="1000" step="25" value="${state.wpm}" />
         <div class="reader-hint">Space: play/pause · ↑↓: speed · ←→: skip · M: mode · Esc: exit</div>
       </div>
-      <div id="reader-progress-bar">
-        <div id="reader-progress" style="width: 0%"></div>
+      <div id="reader-scrub">
+        <div id="reader-scrub-fill" style="width: 0%"></div>
+        <div id="reader-scrub-handle" style="left: 0%"></div>
+        <div id="reader-scrub-label" class="reader-scrub-label"></div>
       </div>
     </div>
   `;
@@ -140,7 +142,10 @@ export function mountReader(
   const wpmLabel = container.querySelector('#reader-wpm') as HTMLElement;
   const slider = container.querySelector('#reader-slider') as HTMLInputElement;
   const controls = container.querySelector('#reader-controls') as HTMLElement;
-  const progressEl = container.querySelector('#reader-progress') as HTMLElement;
+  const scrubBar = container.querySelector('#reader-scrub') as HTMLElement;
+  const scrubFill = container.querySelector('#reader-scrub-fill') as HTMLElement;
+  const scrubHandle = container.querySelector('#reader-scrub-handle') as HTMLElement;
+  const scrubLabel = container.querySelector('#reader-scrub-label') as HTMLElement;
   const modeBtn = container.querySelector('#reader-mode-btn') as HTMLElement;
   const toastEl = container.querySelector('#reader-toast') as HTMLElement;
 
@@ -335,7 +340,8 @@ export function mountReader(
     const progress = state.words.length > 1
       ? (state.position / (state.words.length - 1)) * 100
       : 100;
-    progressEl.style.width = `${progress}%`;
+    scrubFill.style.width = `${progress}%`;
+    scrubHandle.style.left = `${progress}%`;
 
     // Pause pulse: only after user has played at least once
     if (hasStarted) {
@@ -519,6 +525,43 @@ export function mountReader(
   });
 
   gradientEl.addEventListener('scroll', onManualScroll);
+
+  // Scrub bar: click or drag to jump to any position
+  function scrubTo(clientX: number): void {
+    const rect = scrubBar.getBoundingClientRect();
+    const fraction = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const newPos = Math.round(fraction * (state.words.length - 1));
+    if (state.playing) pause();
+    state.position = newPos;
+    renderWord();
+    scrollToFocus();
+    savePosition();
+    const pct = Math.round(fraction * 100);
+    scrubLabel.textContent = `${pct}%`;
+    scrubLabel.style.left = `${pct}%`;
+    scrubLabel.classList.add('visible');
+  }
+
+  scrubBar.addEventListener('click', (e) => {
+    scrubTo(e.clientX);
+    setTimeout(() => scrubLabel.classList.remove('visible'), 1000);
+  });
+
+  let dragging = false;
+  scrubHandle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    dragging = true;
+    scrubLabel.classList.add('visible');
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (dragging) scrubTo(e.clientX);
+  });
+  document.addEventListener('mouseup', () => {
+    if (dragging) {
+      dragging = false;
+      setTimeout(() => scrubLabel.classList.remove('visible'), 1000);
+    }
+  });
 
   document.addEventListener('keydown', handleKey);
 
