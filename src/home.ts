@@ -40,6 +40,14 @@ export async function mountInput(container: HTMLElement): Promise<void> {
           <div class="feature-desc">Library &amp; settings</div>
         </div>
         <div class="feature">
+          <div class="feature-key">B</div>
+          <div class="feature-desc">Bookmark</div>
+        </div>
+        <div class="feature">
+          <div class="feature-key">N</div>
+          <div class="feature-desc">Add note</div>
+        </div>
+        <div class="feature">
           <div class="feature-key">Esc</div>
           <div class="feature-desc">Exit reader</div>
         </div>

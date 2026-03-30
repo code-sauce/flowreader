@@ -1,4 +1,4 @@
-import { storage, Article } from './storage';
+import { storage, Article, Annotation } from './storage';
 import { ThemeSettings, ThemeName, FontFamily, FocusStyle, HighlightMode, saveSettings } from './theme';
 
 function formatDate(ts: number): string {
@@ -132,6 +132,26 @@ export async function mountSidebar(
     ? articles.map(a => renderLibraryItem(a, activeArticleId)).join('')
     : '<div class="sidebar-empty">No articles yet</div>';
 
+  // Load annotations for active article
+  const annotations = activeArticleId
+    ? await storage.getAnnotations(activeArticleId)
+    : [];
+  const annotationsHtml = annotations.length > 0
+    ? annotations.map(a => {
+      const icon = a.type === 'bookmark' ? '&#x1F516;' : '&#x1F4DD;';
+      const label = a.text || `Word ${a.position}`;
+      return `
+        <div class="annotation-item" data-pos="${a.position}">
+          <span class="annotation-icon">${icon}</span>
+          <div class="annotation-body">
+            <div class="annotation-label">${label}</div>
+            <div class="annotation-meta">${a.type} · word ${a.position}</div>
+          </div>
+          <button class="annotation-delete" data-ann-id="${a.id}">&times;</button>
+        </div>`;
+    }).join('')
+    : '';
+
   container.innerHTML = `
     <div class="sidebar-header">
       <span class="sidebar-brand">Flow<span class="sidebar-brand-accent">Reader</span></span>
@@ -142,6 +162,13 @@ export async function mountSidebar(
         ${libraryHtml}
       </div>
     </div>
+    ${annotations.length > 0 ? `
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Bookmarks &amp; Notes</div>
+      <div class="sidebar-list" id="sidebar-annotations">
+        ${annotationsHtml}
+      </div>
+    </div>` : ''}
     ${renderSettings(settings)}
   `;
 
@@ -164,6 +191,26 @@ export async function mountSidebar(
       onArticleClick(item.dataset.id!);
     }
   });
+
+  // Annotation clicks
+  const annList = container.querySelector('#sidebar-annotations');
+  if (annList) {
+    annList.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const annId = target.getAttribute('data-ann-id');
+      if (annId) {
+        e.stopPropagation();
+        storage.deleteAnnotation(annId).then(() => {
+          mountSidebar(container, currentSettings, activeArticleId, onArticleClick, onSettingsChange);
+        });
+        return;
+      }
+      const item = target.closest('.annotation-item') as HTMLElement | null;
+      if (item && item.dataset.pos) {
+        window.dispatchEvent(new CustomEvent('jump-to', { detail: Number(item.dataset.pos) }));
+      }
+    });
+  }
 
   // Settings accordion
   const toggle = container.querySelector('#settings-toggle')!;

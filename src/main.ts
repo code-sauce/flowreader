@@ -87,6 +87,8 @@ async function init(): Promise<void> {
     }
   }) as EventListener);
 
+  window.addEventListener('annotations-changed', () => refreshSidebar());
+
   await navigateToHome();
   toggleSidebar();
 }

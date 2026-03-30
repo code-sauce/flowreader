@@ -212,6 +212,58 @@ html, body {
   color: var(--accent);
 }
 
+.annotation-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.annotation-item:hover {
+  background: var(--bg-hover);
+}
+
+.annotation-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.annotation-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.annotation-label {
+  color: var(--text-bright);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.annotation-meta {
+  font-size: 10px;
+  color: #555;
+  margin-top: 2px;
+}
+
+.annotation-delete {
+  background: none;
+  border: none;
+  color: #555;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.annotation-delete:hover {
+  color: var(--accent);
+}
+
 .sidebar-empty {
   color: #555;
   font-size: 13px;

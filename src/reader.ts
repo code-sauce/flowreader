@@ -1,5 +1,5 @@
 import { getOrpIndex } from './orp';
-import { storage } from './storage';
+import { storage, Annotation } from './storage';
 import { FocusStyle, HighlightMode } from './theme';
 
 export type ReadingMode = 'rsvp' | 'gradient';
@@ -166,6 +166,15 @@ export function mountReader(
   // Listen for pace preset changes
   window.addEventListener('set-wpm', ((e: CustomEvent) => {
     updateWpm(e.detail as number);
+  }) as EventListener);
+
+  // Listen for jump-to from annotations
+  window.addEventListener('jump-to', ((e: CustomEvent) => {
+    if (state.playing) pause();
+    state.position = e.detail as number;
+    renderWord();
+    scrollToFocus();
+    savePosition();
   }) as EventListener);
 
   const wpmLabel = container.querySelector('#reader-wpm') as HTMLElement;
@@ -512,6 +521,41 @@ export function mountReader(
     }
   }
 
+  function addBookmark(): void {
+    if (state.playing) pause();
+    const context = state.words.slice(state.position, state.position + 6).join(' ');
+    const label = context.length > 30 ? context.slice(0, 30) + '...' : context;
+    const annotation: Annotation = {
+      id: crypto.randomUUID(),
+      articleId,
+      type: 'bookmark',
+      position: state.position,
+      text: label,
+      createdAt: Date.now(),
+    };
+    storage.saveAnnotation(annotation);
+    showToast('Bookmarked');
+    window.dispatchEvent(new CustomEvent('annotations-changed'));
+  }
+
+  function addNote(): void {
+    if (state.playing) pause();
+    const note = prompt('Add a note:');
+    if (!note) return;
+    const context = state.words.slice(state.position, state.position + 6).join(' ');
+    const annotation: Annotation = {
+      id: crypto.randomUUID(),
+      articleId,
+      type: 'note',
+      position: state.position,
+      text: note,
+      createdAt: Date.now(),
+    };
+    storage.saveAnnotation(annotation);
+    showToast('Note saved');
+    window.dispatchEvent(new CustomEvent('annotations-changed'));
+  }
+
   function exit(): void {
     pause();
     savePosition();
@@ -559,6 +603,16 @@ export function mountReader(
           pause();
           play();
         }
+        break;
+      case 'b':
+      case 'B':
+        e.preventDefault();
+        addBookmark();
+        break;
+      case 'n':
+      case 'N':
+        e.preventDefault();
+        addNote();
         break;
     }
   }

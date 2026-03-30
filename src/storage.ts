@@ -13,8 +13,19 @@ export interface Article {
   lastReadAt: number;
 }
 
+export interface Annotation {
+  id: string;
+  articleId: string;
+  type: 'bookmark' | 'highlight' | 'note';
+  position: number;       // word index
+  endPosition?: number;   // word index end (for highlights spanning multiple words)
+  color?: string;         // highlight color
+  text?: string;          // note text or bookmark label
+  createdAt: number;
+}
+
 const DB_NAME = 'flowreader';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -27,6 +38,10 @@ function getDb(): Promise<IDBPDatabase> {
         }
         if (!db.objectStoreNames.contains('settings')) {
           db.createObjectStore('settings');
+        }
+        if (!db.objectStoreNames.contains('annotations')) {
+          const store = db.createObjectStore('annotations', { keyPath: 'id' });
+          store.createIndex('byArticle', 'articleId');
         }
       },
     });
@@ -75,6 +90,32 @@ async function setSetting(key: string, value: unknown): Promise<void> {
   await db.put('settings', value, key);
 }
 
+async function saveAnnotation(annotation: Annotation): Promise<void> {
+  const db = await getDb();
+  await db.put('annotations', annotation);
+}
+
+async function getAnnotations(articleId: string): Promise<Annotation[]> {
+  const db = await getDb();
+  const all = await db.getAllFromIndex('annotations', 'byArticle', articleId);
+  return all.sort((a, b) => a.position - b.position);
+}
+
+async function deleteAnnotation(id: string): Promise<void> {
+  const db = await getDb();
+  await db.delete('annotations', id);
+}
+
+async function deleteAnnotationsForArticle(articleId: string): Promise<void> {
+  const db = await getDb();
+  const all = await db.getAllFromIndex('annotations', 'byArticle', articleId);
+  const tx = db.transaction('annotations', 'readwrite');
+  for (const a of all) {
+    tx.store.delete(a.id);
+  }
+  await tx.done;
+}
+
 export const storage = {
   getDb,
   saveArticle,
@@ -84,4 +125,8 @@ export const storage = {
   deleteArticle,
   getSetting,
   setSetting,
+  saveAnnotation,
+  getAnnotations,
+  deleteAnnotation,
+  deleteAnnotationsForArticle,
 };
